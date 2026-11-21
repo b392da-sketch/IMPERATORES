@@ -12,14 +12,19 @@ PHASES = [
 def step(w, ticks: int = 1) -> None:
     for _ in range(ticks):
         observe.begin_tick(w)
-        for _name, fn in PHASES:
+        for name, fn in PHASES:
             fn(w)
+            observe.after_phase(w, name)
         observe.end_tick(w)
         w.tick += 1
+        record.advance_trace(w)
         if w.tick % int(w.params["snapshot_every_ticks"]) == 0:
             record.snapshot(w)
 
 
 def run(w, seconds: float) -> None:
-    record.snapshot(w)                 # initial state
+    """Run for a duration. The record always holds the initial and the final state."""
+    record.snapshot(w)
     step(w, int(round(seconds / w.params["tick_seconds"])))
+    if w.snapshots[-1]["t"] != w.tick:
+        record.snapshot(w)

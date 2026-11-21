@@ -1,37 +1,179 @@
 {
   "name": "test_march",
-  "note": "Step 1 test only: a few entities marching across open and rough ground. Not a historical order of battle.",
+  "note": "Step 1 test only: a few entities marching across open and rough ground. Not a historical order of battle. Ids are stable identities, deliberately not list positions.",
   "terrain": {
     "width": 4000,
     "height": 3000,
     "cell": 20,
-    "rough": [[1600, 1000, 2000, 2000]]
+    "rough": [
+      [
+        1600,
+        1000,
+        2000,
+        2000
+      ]
+    ]
   },
   "entities": [
-    {"side": "A", "name": "Hastati maniple I", "function": "heavy_infantry", "represents": ["maniple of hastati I"],
-     "x": 1000, "y": 1500, "facing_deg": 0, "frontage": 40, "depth": 18, "strength": 120,
-     "succession": ["centurion (prior)", "centurion (posterior)", "optio", "optio"],
-     "equipment": {"reach": "sword", "missiles": {"pilum": 240}, "protection": "medium", "mobility": "foot"},
-     "task": {"kind": "move_to", "x": 2600, "y": 1500}},
-    {"side": "A", "name": "Hastati maniple II", "function": "heavy_infantry", "represents": ["maniple of hastati II"],
-     "x": 1000, "y": 1560, "facing_deg": 0, "frontage": 40, "depth": 18, "strength": 120,
-     "succession": ["centurion (prior)", "centurion (posterior)", "optio", "optio"],
-     "equipment": {"reach": "sword", "missiles": {"pilum": 240}, "protection": "medium", "mobility": "foot"},
-     "task": {"kind": "move_to", "x": 2600, "y": 1560}},
-    {"side": "A", "name": "Velites screen I-II", "function": "skirmishers", "represents": ["velites of maniples I and II"],
-     "x": 1080, "y": 1530, "facing_deg": 0, "frontage": 80, "depth": 10, "strength": 80, "parents": [0, 1],
-     "succession": ["senior veles"],
-     "equipment": {"reach": "missile", "missiles": {"javelin": 400}, "protection": "light", "mobility": "foot"},
-     "task": {"kind": "move_to", "x": 2700, "y": 1530}},
-    {"side": "A", "name": "Turma I", "function": "heavy_cavalry", "represents": ["turma I"],
-     "x": 900, "y": 1200, "facing_deg": 0, "frontage": 30, "depth": 10, "strength": 30,
-     "succession": ["decurion", "decurion", "decurion"],
-     "equipment": {"reach": "spear", "protection": "medium", "mobility": "horse"},
-     "task": {"kind": "move_to", "x": 3200, "y": 900}},
-    {"side": "B", "name": "Test infantry block", "function": "heavy_infantry", "represents": ["placeholder pending Q001"],
-     "x": 3500, "y": 1500, "facing_deg": 180, "frontage": 60, "depth": 15, "strength": 300,
-     "succession": ["contingent commander", "second officer"],
-     "equipment": {"reach": "spear", "protection": "medium", "mobility": "foot"},
-     "task": {"kind": "hold"}}
+    {
+      "id": 10,
+      "side": "A",
+      "name": "Hastati maniple I",
+      "function": "heavy_infantry",
+      "represents": [
+        "maniple of hastati I"
+      ],
+      "x": 1000,
+      "y": 1500,
+      "facing_deg": 0,
+      "frontage": 40,
+      "depth": 18,
+      "strength": 120,
+      "succession": [
+        "centurion (prior)",
+        "centurion (posterior)",
+        "optio",
+        "optio"
+      ],
+      "equipment": {
+        "reach": "sword",
+        "missiles": {
+          "pilum": 240
+        },
+        "protection": "medium",
+        "mobility": "foot"
+      },
+      "task": {
+        "kind": "move_to",
+        "x": 2600,
+        "y": 1500
+      }
+    },
+    {
+      "id": 11,
+      "side": "A",
+      "name": "Hastati maniple II",
+      "function": "heavy_infantry",
+      "represents": [
+        "maniple of hastati II"
+      ],
+      "x": 1000,
+      "y": 1560,
+      "facing_deg": 0,
+      "frontage": 40,
+      "depth": 18,
+      "strength": 120,
+      "succession": [
+        "centurion (prior)",
+        "centurion (posterior)",
+        "optio",
+        "optio"
+      ],
+      "equipment": {
+        "reach": "sword",
+        "missiles": {
+          "pilum": 240
+        },
+        "protection": "medium",
+        "mobility": "foot"
+      },
+      "task": {
+        "kind": "move_to",
+        "x": 2600,
+        "y": 1560
+      }
+    },
+    {
+      "id": 12,
+      "side": "A",
+      "name": "Velites screen I-II",
+      "function": "skirmishers",
+      "represents": [
+        "velites of maniples I and II"
+      ],
+      "x": 1080,
+      "y": 1530,
+      "facing_deg": 0,
+      "frontage": 80,
+      "depth": 10,
+      "strength": 80,
+      "parents": [
+        10,
+        11
+      ],
+      "succession": [
+        "senior veles"
+      ],
+      "equipment": {
+        "reach": "missile",
+        "missiles": {
+          "javelin": 400
+        },
+        "protection": "light",
+        "mobility": "foot"
+      },
+      "task": {
+        "kind": "move_to",
+        "x": 2700,
+        "y": 1530
+      }
+    },
+    {
+      "id": 20,
+      "side": "A",
+      "name": "Turma I",
+      "function": "heavy_cavalry",
+      "represents": [
+        "turma I"
+      ],
+      "x": 900,
+      "y": 1200,
+      "facing_deg": 0,
+      "frontage": 30,
+      "depth": 10,
+      "strength": 30,
+      "succession": [
+        "decurion",
+        "decurion",
+        "decurion"
+      ],
+      "equipment": {
+        "reach": "spear",
+        "protection": "medium",
+        "mobility": "horse"
+      },
+      "task": {
+        "kind": "move_to",
+        "x": 3200,
+        "y": 900
+      }
+    },
+    {
+      "id": 50,
+      "side": "B",
+      "name": "Test infantry block",
+      "function": "heavy_infantry",
+      "represents": [
+        "placeholder pending Q001"
+      ],
+      "x": 3500,
+      "y": 1500,
+      "facing_deg": 180,
+      "frontage": 60,
+      "depth": 15,
+      "strength": 300,
+      "succession": [
+        "contingent commander",
+        "second officer"
+      ],
+      "equipment": {
+        "reach": "spear",
+        "protection": "medium",
+        "mobility": "foot"
+      },
+      "task": {
+        "kind": "hold"
+      }
+    }
   ]
 }

@@ -19,3 +19,14 @@ Answers saved unchanged in `research/questions/`; Claude's notes on use at the e
 - **Cavalry:** six post-victory options and the listed influences; rout-rally-return to the same battle flagged as experimental (Q004).
 
 The placeholders in steps 4, 6, 7, 9 and 11 can now use these answers.
+
+## Step 1 — after Codex review 002 (22 November 2026)
+
+All eight findings reproduced, agreed and fixed (`reviews/responses/002-step1-foundations-answer.md`). Lasting design consequences:
+
+- **Stable ids everywhere.** Entities carry ids from the scenario file; every reference, random key and record uses them. Later orders, messages and decisions will too.
+- **Random keys are validated and unambiguously encoded** (schema 1). Once entities interact, draws that must stay aligned in paired comparisons will be keyed on stable occurrence ids, not on how often an entity has drawn.
+- **Checks at load, start of tick, after every phase and end of tick.** A change made and undone within one phase is invisible to these checks, so headcount changes will go through one checked transfer function (step 6).
+- **Exact replay is judged by a full-precision state trace** after every tick; viewer snapshots are rounded and separate.
+- **Events own their data** (strict-JSON copies at log time).
+- Performance after the added checks: one simulated hour of the five-entity test march in about 0.09 s.
