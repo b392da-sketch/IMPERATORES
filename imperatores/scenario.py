@@ -1,8 +1,7 @@
 """Load a scenario file (JSON) into a World. Orders of battle live in scenarios/, not in code.
 
 Every entity needs a stable integer "id", unique in the file; "parents" refer to ids.
-The terrain "cell" size is a scenario setting and must be given. Movement targets must be
-on the field. The loaded world is checked for consistency before it is returned.
+The terrain format is described in terrain.py. Movement targets must be on passable ground. The loaded world is checked for consistency before it is returned.
 """
 from __future__ import annotations
 
@@ -11,24 +10,9 @@ import json
 import math
 from pathlib import Path
 
-import numpy as np
-
-from .state import FUNCTIONS, SIDES, Entity, Equipment, Officer, Terrain, World
+from . import terrain as terrain_mod
+from .state import FUNCTIONS, SIDES, Entity, Equipment, Officer, World
 from .systems import observe
-
-
-def _terrain(spec: dict) -> Terrain:
-    if "cell" not in spec:
-        raise ValueError("terrain: 'cell' (metres per grid cell) must be given")
-    w, h, cell = float(spec["width"]), float(spec["height"]), float(spec["cell"])
-    if not (w > 0 and h > 0 and cell > 0):
-        raise ValueError("terrain: width, height and cell must be positive")
-    nx, ny = int(math.ceil(w / cell)), int(math.ceil(h / cell))
-    rough = np.zeros((ny, nx), dtype=bool)
-    for r in spec.get("rough", []):              # rectangles [x0, y0, x1, y1] in metres
-        x0, y0, x1, y1 = r
-        rough[int(y0 // cell):int(math.ceil(y1 / cell)), int(x0 // cell):int(math.ceil(x1 / cell))] = True
-    return Terrain(width=w, height=h, cell=cell, rough=rough)
 
 
 def _int(d: dict, key: str, what: str) -> int:
@@ -68,7 +52,7 @@ def _entity(d: dict) -> Entity:
 def load(path: str | Path, seed: int, overrides: dict | None = None) -> World:
     raw = Path(path).read_bytes()
     spec = json.loads(raw)
-    terrain = _terrain(spec["terrain"])
+    terrain = terrain_mod.build(spec["terrain"])
     entities = [_entity(d) for d in spec["entities"]]
     ids = [e.id for e in entities]
     if len(set(ids)) != len(ids):
@@ -80,8 +64,8 @@ def load(path: str | Path, seed: int, overrides: dict | None = None) -> World:
                 raise ValueError(f"entity {e.name}: parent id {p} does not exist")
             if p == e.id:
                 raise ValueError(f"entity {e.name}: cannot be its own parent")
-        if e.task.get("kind") == "move_to" and not terrain.inside(float(e.task["x"]), float(e.task["y"])):
-            raise ValueError(f"entity {e.name}: movement target is off the field")
+        if e.task.get("kind") == "move_to" and not terrain.passable(float(e.task["x"]), float(e.task["y"])):
+            raise ValueError(f"entity {e.name}: movement target is off the field or in the stream")
     w = World.new(spec.get("name", Path(path).stem), seed, terrain, entities,
                   overrides=overrides, scenario_digest=hashlib.sha256(raw).hexdigest())
     try:

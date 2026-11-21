@@ -4,7 +4,7 @@ A historically grounded simulation of ancient battles and campaigns, in which ou
 
 It supports chronologically coherent alternate history and an optional anachronistic mode that pits leaders from different eras against each other.
 
-**Where it stands (22 November 2026):** build step 1 of 11 (foundations) is done. The first milestone, M0 "a battle that explains itself", has an approved specification (`docs/M0_SPECIFICATION_v1.md`) and is in build (`docs/M0_BUILD_PLAN.md`).
+**Where it stands (22 November 2026):** build steps 1–2 of 11 (foundations; terrain, sight and routes) are done. The first milestone, M0 "a battle that explains itself", has an approved specification (`docs/M0_SPECIFICATION_v1.md`) and is in build (`docs/M0_BUILD_PLAN.md`).
 
 Historical research is kept in Notion (IMPERATORES Research Hub). Working rules for Claude sessions are in `CLAUDE.md`; independent reviews in `reviews/`.
 
@@ -19,4 +19,4 @@ python -m unittest discover -s tests -v
 python run.py scenarios/test_march.json --seed 1 --seconds 3600 --out records/test.json
 ```
 
-There is no battle or viewer yet; step 1 moves a few test entities across open and rough ground and records it.
+There is no battle or viewer yet. `scenarios/test_field.json` moves a few test entities over a hill, a wood, rough ground and a stream with one ford, and records it.

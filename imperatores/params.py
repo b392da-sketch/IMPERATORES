@@ -45,8 +45,21 @@ PARAMS: dict[str, Param] = {
     "turn_rate_formed": Param(0.05, 0.01, 0.2, ASSUMPTION, "how fast a formed body can change facing", "rad/s"),
     "turn_rate_open": Param(0.3, 0.05, 1.0, ASSUMPTION, "how fast open-order troops and cavalry change facing", "rad/s"),
     "formed_move_alignment_deg": Param(30.0, 5.0, 90.0, ASSUMPTION, "a formed body moves forward only once facing within this angle of its target; it does not crab sideways", "deg"),
-    "rough_pace_factor": Param(0.6, 0.3, 0.9, ASSUMPTION, "pace on rough ground as a fraction of pace on open ground", ""),
-    "rough_order_loss_per_100m": Param(0.05, 0.0, 0.2, ASSUMPTION, "loss of order per 100 m actually crossed on rough ground, formed troops", ""),
+    # ground: pace as a fraction of pace on open ground, by movement class (formed foot, open-order foot, horse)
+    "pace_rough_formed": Param(0.6, 0.3, 0.9, ASSUMPTION, "formed foot on rough ground", ""),
+    "pace_rough_open": Param(0.8, 0.5, 1.0, ASSUMPTION, "open-order foot on rough ground", ""),
+    "pace_rough_horse": Param(0.6, 0.3, 0.9, ASSUMPTION, "horse on rough ground", ""),
+    "pace_woods_formed": Param(0.35, 0.15, 0.7, ASSUMPTION, "formed foot in woods", ""),
+    "pace_woods_open": Param(0.7, 0.4, 1.0, ASSUMPTION, "open-order foot in woods", ""),
+    "pace_woods_horse": Param(0.35, 0.1, 0.7, ASSUMPTION, "horse in woods", ""),
+    "pace_ford_formed": Param(0.4, 0.2, 0.8, ASSUMPTION, "formed foot crossing at a ford", ""),
+    "pace_ford_open": Param(0.5, 0.2, 0.9, ASSUMPTION, "open-order foot crossing at a ford", ""),
+    "pace_ford_horse": Param(0.5, 0.2, 0.9, ASSUMPTION, "horse crossing at a ford", ""),
+    "slope_pace_k": Param(4.0, 0.0, 10.0, ASSUMPTION, "uphill slowing: pace divided by (1 + k x gradient); no effect downhill in M0", ""),
+    # ground: loss of order per 100 m actually crossed, formed troops only
+    "order_loss_rough_per_100m": Param(0.05, 0.0, 0.2, ASSUMPTION, "formed troops crossing rough ground", ""),
+    "order_loss_woods_per_100m": Param(0.15, 0.0, 0.5, ASSUMPTION, "formed troops moving through woods", ""),
+    "order_loss_ford_per_100m": Param(0.2, 0.0, 0.6, ASSUMPTION, "formed troops crossing a ford", ""),
     "order_recovery_per_min_halted": Param(0.05, 0.0, 0.2, ASSUMPTION, "order regained per minute when halted and dressing ranks", ""),
     "fatigue_per_min_moving": Param(0.004, 0.0, 0.02, ASSUMPTION, "fatigue gained per minute of actual marching in formation", ""),
     "fatigue_recovery_per_min_halted": Param(0.004, 0.0, 0.02, ASSUMPTION, "fatigue lost per minute at rest", ""),
@@ -54,6 +67,15 @@ PARAMS: dict[str, Param] = {
     "arrival_tolerance": Param(5.0, 1.0, 20.0, ASSUMPTION, "distance at which a movement target counts as reached", "m"),
     "max_speed_any": Param(8.0, 5.0, 12.0, ASSUMPTION,
                            "physical upper limit (a galloping horse): movement is capped at it, and the consistency check enforces it independently", "m/s"),
+
+    # sight (step 2)
+    "sight_range_max": Param(3000.0, 1000.0, 6000.0, ASSUMPTION, "furthest distance at which a formed body can be seen at all in clear weather", "m"),
+    "sight_range_in_woods": Param(60.0, 20.0, 150.0, ASSUMPTION, "how far one sees inside a wood, or how close one must be to see into it", "m"),
+    "wood_canopy_height": Param(12.0, 5.0, 25.0, ASSUMPTION, "height of a wood's canopy above the ground, for blocking sight", "m"),
+    "eye_height_foot": Param(1.7, 1.5, 2.0, ASSUMPTION, "eye height of a man on foot", "m"),
+    "eye_height_horse": Param(2.5, 2.2, 2.9, ASSUMPTION, "eye height of a rider", "m"),
+    "target_height_foot": Param(2.0, 1.7, 3.0, ASSUMPTION, "visible height of an infantry body (men, shields, standards)", "m"),
+    "target_height_horse": Param(2.6, 2.2, 3.2, ASSUMPTION, "visible height of a body of horse", "m"),
 
     # organisation (Polybius 6.20-26 as a template)
     "legion_hastati": Param(1200, 1200, 1200, EVIDENCED, "Polybius 6.21.9", "men", integer=True, grade=_POLYBIUS_GRADE),

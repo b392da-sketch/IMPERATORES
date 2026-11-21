@@ -14,6 +14,7 @@ import numpy as np
 
 from . import params as params_mod
 from .rng import Random
+from .terrain import Terrain  # noqa: F401  (re-exported for callers)
 
 SIDES = ("A", "B")
 FUNCTIONS = ("heavy_infantry", "skirmishers", "light_cavalry", "heavy_cavalry")
@@ -85,28 +86,11 @@ def invariant_problems(e: Entity, terrain) -> list[str]:
             out.append(f"{f}={v!r} outside 0..1")
     if not (math.isfinite(e.x) and math.isfinite(e.y) and terrain.inside(e.x, e.y)):
         out.append(f"position ({e.x}, {e.y}) is off the field")
+    elif not terrain.passable(e.x, e.y):
+        out.append(f"position ({e.x:.1f}, {e.y:.1f}) is in the stream away from a ford")
     if not math.isfinite(e.facing):
         out.append(f"facing={e.facing!r} is not finite")
     return out
-
-
-@dataclass
-class Terrain:
-    """Step 1: a grid with a rough-ground mask. Height, woods, streams and sight come in step 2."""
-    width: float                                 # metres, x from 0
-    height: float                                # metres, y from 0
-    cell: float                                  # metres per cell (set by the scenario)
-    rough: np.ndarray                            # bool [ny, nx]
-
-    def is_rough(self, x: float, y: float) -> bool:
-        i = int(y // self.cell)
-        j = int(x // self.cell)
-        if 0 <= i < self.rough.shape[0] and 0 <= j < self.rough.shape[1]:
-            return bool(self.rough[i, j])
-        return False
-
-    def inside(self, x: float, y: float) -> bool:
-        return 0.0 <= x <= self.width and 0.0 <= y <= self.height
 
 
 @dataclass

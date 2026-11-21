@@ -30,3 +30,13 @@ All eight findings reproduced, agreed and fixed (`reviews/responses/002-step1-fo
 - **Exact replay is judged by a full-precision state trace** after every tick; viewer snapshots are rounded and separate.
 - **Events own their data** (strict-JSON copies at log time).
 - Performance after the added checks: one simulated hour of the five-entity test march in about 0.09 s.
+
+## Step 2 — terrain, sight and routes (22 November 2026)
+
+- **Ground:** open, rough, woods, a stream crossable only at fords, and a smooth height map from hills. Format in `imperatores/terrain.py`.
+- **Assumption, recorded:** both armies know the ground (pre-battle reconnaissance). Misjudged ground is outside M0. Beliefs about the *enemy* are separate (step 3).
+- **Sight** (`sight.py`): range limit, then blocking by ground and wood canopy along the line from eye to target. Higher ground sees further because ridges and woods stop blocking, not through a separate bonus. Inside a wood, sight is short. No haze, dust or weather.
+- **Routes** (`pathing.py`): A* over cells minimising travel time for the movement class, then shortened where a straight line is no slower ground. Formed troops therefore go round woods when that is quicker. Slope is ignored in planning but slows movement uphill.
+- **A failed first attempt, and its fix.** The first stream drawing marked cells whose centre lay within the stream's half-width, at least half a cell. A diagonal stream thinner than a cell left gaps between diagonal cells, and a straight route slipped through. The sampling checks along routes and steps could also miss a clipped cell corner. Both now use an exact grid traversal (`terrain.cells_on_segment`): the stream marks every cell its line passes through, and routes and movement steps are checked against every cell they touch. A randomised test throws short steps across a thin diagonal stream; none gets through.
+- **Movement classes:** formed foot, open-order foot, horse, each with its own pace on rough ground, woods and fords. Only formed troops lose order to ground.
+- **Performance:** one route across the test field takes about 80 ms. At about 200 entities that is up to 16 s if every entity replans at once, too slow for the fast mode later and worth watching. Options when it matters: a coarser planning grid, cached routes, or vectorised search.

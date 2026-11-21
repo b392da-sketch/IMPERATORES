@@ -1,0 +1,27 @@
+{
+  "name": "test_field",
+  "note": "Step 2 test only: a hill, a wood, rough ground and a stream with one ford. Not a historical field or order of battle.",
+  "terrain": {
+    "width": 4000, "height": 3000, "cell": 20,
+    "hills": [[2000, 2400, 40, 1000]],
+    "rough": [[1600, 1000, 2000, 1400]],
+    "woods": [[1200, 600, 1600, 1100]],
+    "stream": {"width": 10, "points": [[2800, 0], [2900, 3000]]},
+    "fords": [[2850, 1500, 40]]
+  },
+  "entities": [
+    {"id": 1, "side": "A", "name": "Hastati maniple", "function": "heavy_infantry", "represents": ["test maniple"],
+     "x": 1000, "y": 1500, "facing_deg": 0, "frontage": 40, "depth": 18, "strength": 120,
+     "succession": ["centurion (prior)", "centurion (posterior)", "optio", "optio"],
+     "equipment": {"reach": "sword", "missiles": {"pilum": 240}, "protection": "medium", "mobility": "foot"},
+     "task": {"kind": "move_to", "x": 3300, "y": 1500}},
+    {"id": 2, "side": "A", "name": "Turma", "function": "heavy_cavalry", "represents": ["test turma"],
+     "x": 1000, "y": 300, "facing_deg": 0, "frontage": 30, "depth": 10, "strength": 30,
+     "succession": ["decurion", "decurion", "decurion"],
+     "equipment": {"reach": "spear", "protection": "medium", "mobility": "horse"},
+     "task": {"kind": "move_to", "x": 3300, "y": 300}},
+    {"id": 3, "side": "B", "name": "Watchers on the hill", "function": "skirmishers", "represents": ["placeholder"],
+     "x": 2000, "y": 2400, "facing_deg": 270, "frontage": 40, "depth": 10, "strength": 50,
+     "equipment": {"reach": "missile", "protection": "light", "mobility": "foot"}}
+  ]
+}
