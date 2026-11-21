@@ -1,6 +1,6 @@
 # Q004 — Cavalry pursuit, return and rallying, Second Punic War
 
-**Status:** open, not yet sent (22 November 2026)
+**Status:** sent by Ben, 22 November 2026
 **Needed for:** M0 pursuit and rally (specification 2 and 5.6)
 
 **Decision it informs:** the options a cavalry officer has after beating opposing horse (pursue, stop, turn on the infantry, return to the commander), and what makes each more or less likely.

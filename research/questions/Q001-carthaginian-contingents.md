@@ -1,6 +1,6 @@
 # Q001 — Contingent types for a Carthaginian-style army, Second Punic War
 
-**Status:** open, not yet sent (22 November 2026)
+**Status:** sent by Ben, 22 November 2026
 **Needed for:** M0 default scenario (the Carthaginian-style order of battle)
 
 **Decision it informs:** which unit types the M0 scenario uses for the Carthaginian side, and the formation, equipment class and rough size each starts with.
