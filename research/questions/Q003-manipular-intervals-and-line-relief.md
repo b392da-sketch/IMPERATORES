@@ -1,6 +1,6 @@
 # Q003 — Manipular intervals and how lines relieved one another
 
-**Status:** prompt given to Ben, 22 November 2026; awaiting answer
+**Status:** answered and closed for M0, 22 November 2026
 **Needed for:** M0 formations and contact (specification 5.1–5.2)
 
 **Decision it informs:** which formation layouts and line-relief procedures the simulation must be able to represent. This is not a request to settle the debate.
@@ -14,3 +14,12 @@
 3. Any ancient passage that describes the mechanics directly, as opposed to the result.
 
 **What ends the inquiry:** two short lists (layouts; relief procedures), each item with its ancient support, its main modern advocates and objections, and source grades. Two or three alternatives in each list are enough; the simulation will support them as switchable options and test whether the choice matters.
+
+## Claude's notes on the answer (22 November 2026)
+
+Answer saved unchanged in `Q003-manipular-intervals-and-line-relief-answer.md`.
+
+**How it is used:** two scenario switches, with no historical default.
+- **Layout:** (A1) staggered grid with gaps kept during contact, covered by the lines behind; (A2) gaps closed before or on contact into a broadly continuous front; (A3) flexible local gaps that open and close unevenly.
+- **Relief:** (B1) front line falls back through the intervals of the line behind, which takes over (Livy 8.8.9–13, with the caveat that Livy describes the fourth century); (B2) the following line moves forward or sideways to support or replace engaged segments; (B3) limited local replacement and recovery during lulls.
+- Interval widths and timings are engineering assumptions. The combinations are part of the sensitivity report, so we learn whether the choice matters to outcomes.

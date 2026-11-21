@@ -16,4 +16,4 @@ Steps in order. Each step ends with its tests passing and a Codex review (`revie
 | 10 | **Viewer, second step:** belief overlays and "Why?" navigation | 6.1, 7.1 check 7 |
 | 11 | **Default scenario** (with Q001–Q004 answers), diagnostics, sensitivity and performance reports; then gate G0 | 4, 7.3 |
 
-Research questions Q001–Q004 are needed by steps 4, 6, 7, 9 and 11; until answered, those steps use clearly labelled placeholders.
+Research questions Q001–Q004 (answered 22 November 2026) feed steps 4, 6, 7, 9 and 11; see `research/questions/` and the build notes.
