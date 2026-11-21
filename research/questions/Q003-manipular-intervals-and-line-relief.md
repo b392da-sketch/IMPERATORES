@@ -1,6 +1,6 @@
 # Q003 — Manipular intervals and how lines relieved one another
 
-**Status:** sent by Ben, 22 November 2026
+**Status:** prompt given to Ben, 22 November 2026; awaiting answer
 **Needed for:** M0 formations and contact (specification 5.1–5.2)
 
 **Decision it informs:** which formation layouts and line-relief procedures the simulation must be able to represent. This is not a request to settle the debate.

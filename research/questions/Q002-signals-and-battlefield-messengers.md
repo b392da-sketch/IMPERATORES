@@ -1,6 +1,6 @@
 # Q002 — Prearranged signals and battlefield messengers, mid-Republican Roman and Punic armies
 
-**Status:** sent by Ben, 22 November 2026
+**Status:** prompt given to Ben, 22 November 2026; awaiting answer
 **Needed for:** M0 orders and messengers (specification 5.5)
 
 **Decision it informs:** (a) the fixed menu of meanings a prearranged signal can carry, and its reach; (b) who carries orders across the field, mounted or on foot, and what can go wrong.
