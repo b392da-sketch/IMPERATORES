@@ -6,7 +6,7 @@ Ben owns the design. Read the current milestone specification in `docs/` before 
 - **Ben:** priorities, design decisions, gate approval.
 - **Claude:** technical architect and implementer. Evaluates research proposals and may accept, refine, reject or defer them.
 - **ChatGPT:** historical research (kept in Notion, IMPERATORES Research Hub) and independent review of specifications, build steps and gate reports. Ben relays requests and answers through `reviews/`. Claude reproduces each finding before acting on it and answers in writing.
-- **Codex:** joins later as a second independent reviewer (rules will go in `AGENTS.md`).
+- **Codex:** independent code reviewer from build step 1 (rules in `AGENTS.md`); reviews each build step and gate report. Ben relays.
 - **Research questions** for ChatGPT go in `research/questions/` (format in `research/README.md`), raised when a build step needs them.
 
 ## Rules

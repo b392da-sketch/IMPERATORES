@@ -1,6 +1,6 @@
-# M0 — "A battle that explains itself" — specification DRAFT v0.2
+# M0 — "A battle that explains itself" — specification v1
 
-**Status:** draft v0.2, 22 November 2026, revised after independent review 001 (`reviews/responses/001-m0-specification.md`, answer in `001-m0-specification-answer.md`). Ben's decisions from v0.1 are in section 10. Not yet approved. Every number is a provisional starting value to be tuned, not a historical measurement.
+**Status:** **approved by Ben on 22 November 2026** (draft v0.2, revised after independent review 001: `reviews/responses/001-m0-specification.md`, answer in `001-m0-specification-answer.md`). Decisions in section 10. Every number is a provisional starting value to be tuned, not a historical measurement.
 
 ## 1. Purpose
 
@@ -205,9 +205,9 @@ All values live in one `params` file, each with an explicit plausible range and 
 Answered by Ben, 22 November 2026, on v0.1:
 
 1. Observer mode only in M0; commander mode in M1 on the same order pipeline. **Yes.**
-2. Maniple-scale tactical entities. **As proposed.** *v0.2 corrects the count:* one legion plus allies needs about 80–100 entities per side, not 25–40 (review finding 1). **Ben to confirm.**
+2. Maniple-scale tactical entities. **As proposed.** *v0.2 corrects the count:* one legion plus allies needs about 80–100 entities per side, not 25–40 (review finding 1). **Ben: confirmed.**
 3. A local browser viewer first, then a desktop window. **As proposed.**
-4. Gate thresholds as starting proposals. **Yes**, but v0.2 replaces the frequency thresholds with acceptance checks plus diagnostics, following review finding 3. **Ben to confirm.**
+4. Gate thresholds as starting proposals. **Yes**, but v0.2 replaces the frequency thresholds with acceptance checks plus diagnostics, following review finding 3. **Ben: confirmed.**
 5. Independent review before approval. **Yes; done** (review 001). Codex joins later as a second reviewer.
 
-**Open for Ben:** approve v0.2, or ask for changes.
+**Ben approved v0.2 as v1 on 22 November 2026.**
