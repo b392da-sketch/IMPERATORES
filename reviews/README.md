@@ -10,3 +10,5 @@ ChatGPT reviews specifications, completed build steps and gate reports. ChatGPT 
 4. `reviews/LOG.md` keeps one line per review.
 
 Reviews inform Ben's decisions; they do not make them.
+
+**Codex** will join later as a second independent reviewer, as in Origins. When it does, its rules go in `AGENTS.md`: it reads everything and writes only to `reviews/`.

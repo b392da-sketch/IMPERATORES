@@ -1,6 +1,6 @@
 # M0 — "A battle that explains itself" — specification DRAFT
 
-**Status:** draft for Ben's review, 22 November 2026. Nothing here is approved. Every number is a provisional starting value to be tuned, not a historical measurement. Items marked **DECIDE** need Ben's answer (collected in section 10).
+**Status:** draft, 22 November 2026. Ben has answered the decisions in section 10; the draft is under independent review (request 001) and is not yet approved. Every number is a provisional starting value to be tuned, not a historical measurement.
 
 ## 1. Purpose
 
@@ -145,10 +145,12 @@ Where the sources cannot give a range, the value is labelled an **engineering as
 - Patterns taken from Origins (copied, not imported, so neither project can break the other): plain-data state with systems run in a fixed order, separate random streams, exact replay, cause chains, one file of tunable values, behavioural gates.
 - Proposed layout: `imperatores/` (state, systems, engine, record, explain, params), `scenarios/`, `viewer/`, `tests/`, `gates/`, `docs/`, `reviews/`.
 
-## 10. Decisions for Ben
+## 10. Decisions for Ben — answered 22 November 2026
 
-1. **Observer mode only in M0**, with commander mode in M1 using the same order pipeline? (Proposed: yes.)
-2. **Unit scale:** maniple-sized units (about 25–40 per side), or larger blocks (about 10–15 per side, faster but losing the intervals and lines that make Roman tactics distinctive)? (Proposed: maniple-sized.)
-3. **Viewer:** a local page in the browser like the Origins observatory, or its own desktop window? (Proposed: build it as a local page first, then wrap it in a desktop window, which is a small step.)
-4. **Gate thresholds** in section 7: acceptable as starting proposals?
-5. **Review:** ChatGPT reviews this specification and later each build step, with Ben relaying requests and answers through `reviews/`. Should ChatGPT review this draft before you approve it?
+1. **Observer mode only in M0**, with commander mode in M1 using the same order pipeline. **Ben: yes.**
+2. **Unit scale:** maniple-sized units, about 25–40 per side (rather than larger blocks of about 10–15 per side, which would be faster but lose the intervals and lines that make Roman tactics distinctive). **Ben: as proposed.**
+3. **Viewer:** a local page in the browser first, then wrapped in its own desktop window. **Ben: as proposed.**
+4. **Gate thresholds** in section 7 accepted as starting proposals. **Ben: yes.**
+5. **Review:** the draft goes to independent review (request 001) before Ben approves it. **Ben: yes; sent.** Codex will also join as an independent reviewer at a later point, as in Origins.
+
+The specification stays a draft until the review has been answered and Ben approves it.
