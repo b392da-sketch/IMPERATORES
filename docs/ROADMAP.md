@@ -162,6 +162,16 @@ A small fictional Roman–Carthaginian engagement; observer mode only. Specifica
 - **Origins hands a battle to IMPERATORES** and receives the result. **(Decided: a good idea to return to later.)**
 - **An interface agreed with the Origins project** when both are ready; nothing before.
 
+## M10 — Armies of later eras (much later; added by Ben, 22 November 2026)
+
+- **Ancient leaders commanding armies from later periods,** for example Caesar against Alexander, both with Napoleonic armies. An extension of the M3 army swap, from ancient armies to any era's. **(Decided: on the roadmap; for much later.)**
+- **What it needs, in outline (to be specified when it comes):**
+  - **Combat and formations of the new era:** firearms, artillery, line, column and square. These are new contact and fire models, calibrated and tested at their own gate as the ancient ones are, not reskins of them.
+  - **Research for each era added:** its own armies, drill, command and signalling, kept in the Research Hub like the ancient research.
+  - **The leader carries his tendencies, not his era's knowledge:** what Caesar does with muskets comes from his source-graded decision tendencies meeting an unfamiliar army, through the M3 familiarity and learning rules. No rule may say how an ancient general "would" use gunpowder. Nothing is scripted.
+  - **Command at the new scale:** written orders, staff, aides and corps, at the reach and speed of that era.
+- **Depends on:** M3 (swaps, familiarity, mismatch handling); the explanation, engine and gate discipline from M0 onwards.
+
 ---
 
 ## Running alongside every milestone
@@ -179,3 +189,4 @@ A small fictional Roman–Carthaginian engagement; observer mode only. Specifica
 4. **First playable roster:** Alexander, Scipio Africanus, Hannibal and Caesar. **Decided.**
 5. **The performance choice** from M0: accept the current cost for now and decide at step 11 with the performance report. **Decided.**
 6. **Where "release" falls:** later. **Deferred.**
+7. **Armies of later eras** (ancient leaders with, for example, Napoleonic armies): added as M10, for much later. **Decided.**
