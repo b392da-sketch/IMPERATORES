@@ -6,7 +6,7 @@ It supports chronologically coherent alternate history and an optional anachroni
 
 **Where it stands (22 November 2026):** build steps 1–4 of 11 (foundations; terrain, sight and routes; belief pictures; orders, messengers and signals) are done. The first milestone, M0 "a battle that explains itself", has an approved specification (`docs/M0_SPECIFICATION_v1.md`) and is in build (`docs/M0_BUILD_PLAN.md`).
 
-Historical research is kept in Notion (IMPERATORES Research Hub). Working rules for Claude sessions are in `CLAUDE.md`; independent reviews in `reviews/`.
+The whole plan, milestone by milestone, is in `docs/ROADMAP.md` (draft). Historical research is kept in Notion (IMPERATORES Research Hub). Working rules for Claude sessions are in `CLAUDE.md`; independent reviews in `reviews/`.
 
 IMPERATORES is a separate project from Origins. Origins settles wars at its own coarse scale; IMPERATORES is the detailed battle and campaign layer.
 
