@@ -122,6 +122,7 @@ PARAMS: dict[str, Param] = {
     "latitude_cost_normal": Param(1.0, 0.2, 3.0, ASSUMPTION, "score cost of acting beyond an order with normal latitude, before initiative", ""),
     "latitude_cost_free": Param(0.3, 0.0, 1.0, ASSUMPTION, "score cost of acting beyond an order with free latitude, before initiative", ""),
     "change_cost": Param(0.5, 0.0, 2.0, ASSUMPTION, "score cost of changing course at a reassessment: he changes only for a reason", ""),
+    "commitment_review_s": Param(600.0, 120.0, 1800.0, ASSUMPTION, "a commander reconsiders a reserve he sent, or an action he took, after this long without news", "s"),
     "report_min_interval_s": Param(60.0, 10.0, 300.0, ASSUMPTION, "an officer reports a new threat no more often than this", "s"),
     "face_tolerance_deg": Param(10.0, 2.0, 30.0, ASSUMPTION, "an entity facing a threat has turned enough within this angle", "deg"),
     "messenger_retarget_m": Param(20.0, 5.0, 100.0, ASSUMPTION, "a messenger replans his route when where he is riding to moves by more than this", "m"),
@@ -172,4 +173,11 @@ def resolve(overrides: dict | None = None) -> dict[str, float]:
         if k not in PARAMS:
             raise KeyError(f"unknown parameter {k}")
         vals[k] = check_override(k, v)
+    for lo, hi in ORDERED:                       # pairs that must not be inverted (review 006, notes)
+        if vals[lo] > vals[hi]:
+            raise ValueError(f"{lo}={vals[lo]} is greater than {hi}={vals[hi]}")
     return vals
+
+
+ORDERED = (("decide_officer_min_s", "decide_officer_max_s"), ("decide_wing_min_s", "decide_wing_max_s"),
+           ("decide_army_min_s", "decide_army_max_s"), ("flank_angle_deg", "rear_angle_deg"))

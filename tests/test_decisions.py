@@ -45,14 +45,45 @@ def total(pr, prefix):
 
 class Structure(unittest.TestCase):
     def test_decision_code_sees_only_what_it_is_given(self):
-        """Check 3, structural: the decision module never reaches the world, true identities or the audit."""
+        """Check 3, structural (review 006/10): the decision module imports nothing that could
+        reach the world, and names none of its hidden parts. A tripwire for trusted code, not a sandbox."""
+        import ast
         src = (ROOT / "imperatores" / "decisions.py").read_text()
-        code = re.sub(r'"""[\s\S]*?"""', "", src)
-        for word in ("world", "w.", "by_id", "_truth", "_former", "audit", "intended", "misread", "entities",
-                     "handle_of", "import numpy", "from .state", "from . import", "from .systems"):
-            self.assertFalse(word in code, word)
-        imports = re.findall(r"^\s*(?:from|import)\s+([\w.]+)", code, re.M)
-        self.assertEqual(sorted(set(imports)), ["__future__", "dataclasses", "math", "types"])
+        tree = ast.parse(src)
+        imported = set()
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Import):
+                imported |= {a.name.split(".")[0] for a in node.names}
+            elif isinstance(node, ast.ImportFrom):
+                self.assertEqual(node.level, 0, "no relative imports")
+                imported.add(node.module.split(".")[0])
+        self.assertEqual(imported, {"__future__", "dataclasses", "math", "types"})
+        names = {n.id for n in ast.walk(tree) if isinstance(n, ast.Name)} | \
+                {n.attr for n in ast.walk(tree) if isinstance(n, ast.Attribute)}
+        for word in ("world", "w", "by_id", "entities", "commanders_by_id", "beliefs", "_truth", "_former",
+                     "audit", "intended", "misread", "handle_of", "orders", "messengers"):
+            self.assertNotIn(word, names, word)
+
+    def test_the_context_holds_only_values(self):
+        """What decide.py hands the scorer: immutable value objects and plain data, nothing that
+        refers back into the world (review 006/10)."""
+        w = scenario.load(FIELD, 2)
+        engine.step(w, 6)
+        allowed = (int, float, str, bool, type(None), dm.Tendencies, dm.OrderView, dm.SubView, Contact)
+
+        def check(v, path):
+            if isinstance(v, (tuple, list)):
+                for k, x in enumerate(v):
+                    check(x, f"{path}[{k}]")
+            elif isinstance(v, MappingProxyType):
+                for k, x in v.items():
+                    check(x, f"{path}.{k}")
+            else:
+                self.assertIsInstance(v, allowed, path)
+        for owner in (1, 2, 51, 900, 910, 950):
+            ctx = decide._context(w, owner, "test")
+            for f in ctx.__dataclass_fields__:
+                check(getattr(ctx, f), f)
 
     def test_every_decision_is_recorded_with_inputs_options_and_choice(self):
         w = scenario.load(FIELD, 2)

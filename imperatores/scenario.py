@@ -243,8 +243,19 @@ def _inputs(spec: list, everyone: set, commanders: dict, sides: dict, terrain, t
             if set(body) - {"issuer", "meaning", "to"}:
                 raise ValueError(f"{what}: unexpected keys in the signal")
         out.append([t, k, kind, body])
-    out.sort(key=lambda r: (r[0], r[1]))
-    return [[t, kind, body, k] for t, k, kind, body in out]
+    # each input's random key comes from what it is, not where it sits in the file, so adding,
+    # removing or reordering other inputs never shifts it (review 006/9); identical inputs are
+    # numbered among themselves
+    seen = {}
+    keyed = []
+    for t, k, kind, body in out:
+        canon = json.dumps([t, kind, body], sort_keys=True, separators=(",", ":"))
+        h = int.from_bytes(hashlib.sha256(canon.encode()).digest()[:4], "big")
+        dup = seen.get(canon, 0)
+        seen[canon] = dup + 1
+        keyed.append([t, k, kind, body, (h, dup)])
+    keyed.sort(key=lambda r: (r[0], r[1]))
+    return [[t, kind, body, ik] for t, _, kind, body, ik in keyed]
 
 
 def load(path: str | Path, seed: int, overrides: dict | None = None) -> World:

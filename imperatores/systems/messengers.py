@@ -214,6 +214,10 @@ def _back(w, ms) -> None:
             _set(w, ms, "home")
             w.staff[ms.sender] = w.staff.get(ms.sender, 0) + 1
             record.log(w, "messenger_returned", ms.sender, {"messenger": ms.id}, [{"note": "back with his sender"}])
+            o = ms.message.order
+            if o is not None and o.status == "failed":     # he tells his sender it did not get through
+                from . import decide
+                decide.on_news(w, ms.sender, o)
         else:
             _set(w, ms, "dismissed")
             record.log(w, "messenger_dismissed", ms.sender, {"messenger": ms.id}, [{"note": "his sender is dead"}])

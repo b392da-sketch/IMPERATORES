@@ -17,6 +17,7 @@ from __future__ import annotations
 import hashlib
 import json
 
+from .belief import astuple_c
 from .state import HEADCOUNT_FIELDS
 
 SNAPSHOT_FIELDS = ("x", "y", "facing", *HEADCOUNT_FIELDS, "fatigue", "order", "resolve")
@@ -48,7 +49,8 @@ def state_bytes(w) -> bytes:
         [[ms.id, list(ms.key), ms.status, ms.x, ms.y, ms.dest, ms.route, ms.route_for, ms.search_ticks,
           ms.stuck_ticks, ms.ridden_m] for ms in w.messengers],
         sorted([k, v] for k, v in w.staff.items()),
-        sorted([k, [[m.id, list(m.key), m.kind, m.recipient, m.created_t] for m in v]] for k, v in w.outbox.items()),
+        sorted([k, [[m.id, list(m.key), m.kind, m.recipient, m.created_t, [astuple_c(c) for c in m.contacts]]
+                    for m in v]] for k, v in w.outbox.items()),
         sorted([k, v] for k, v in w.pending.items()),
         sorted([k, list(p.home), p.on] for k, p in w.plans.items()),
         sorted([list(k), v] for k, v in w.seq.items()),
@@ -56,6 +58,7 @@ def state_bytes(w) -> bytes:
         w.inputs,
         sorted([k, v] for k, v in w.deciders.items()),
         sorted([k, v] for k, v in w.standing.items()),
+        sorted(w.reported_to),                   # report interrupts not yet consumed (review 006/8)
     ]
     return json.dumps([w.tick, rows, cmds, w.belief_trace, w.command_trace, command], sort_keys=True,
                       separators=(",", ":"), allow_nan=False, default=list).encode()

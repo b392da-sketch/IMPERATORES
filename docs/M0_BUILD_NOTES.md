@@ -135,6 +135,20 @@ New parameters: `messenger_retarget_m` (20 m), `messenger_wait_timeout_s` (1800 
 
 **Performance.** With 200 entities and 2 commanders in contact, the decide phase costs about 16–19 ms per tick, or about 90–100 s per 3-hour battle, on top of perception.
 
+## Step 5 revisited after Codex review 006 (22 November 2026)
+
+All eleven findings fixed (`reviews/responses/006-step5-decisions-answer.md`). Model decisions, all engineering assumptions:
+- **Own choices stay exact:** an officer's attack on a track he chose goes to that track, not the best match for a description of it.
+- **Commitments are beliefs, not facts:** a commander's memory of a sent reserve or a taken action lapses after `commitment_review_s` (600 s), or on news from a returning messenger that the order failed. *Consequence observed:* in the stream fixture the commander re-sends the reserve on news, which is a retry. Retries are bounded by the decision schedule and the change cost, and give no information beyond the rider's report.
+- **Beyond orders** is recorded on its own; the latitude cost may be zero.
+- **Receipt** scores where the recipient would actually go.
+- **Facing** turns to a real flank or rear threat and is scored at the new heading.
+- **Timing:** every decision restarts the routine timer; decisions within a tick are numbered.
+- **Records** are complete enough to rebuild each decision exactly (tested on every decision of a run).
+- **Input keys** come from input content.
+
+New parameter: `commitment_review_s` (600 s, assumption). Parameter pairs that must not be inverted are checked.
+
 ## Performance decision (22 November 2026)
 
 Ben accepted the current perception cost (about 450 ms per cycle at 200 entities on hill slopes) for now. It is to be decided at step 11 with the performance report from a complete battle. Options then: share sight lines between ends; change how often officers look (a model choice, Ben's); the fast mode (M3).

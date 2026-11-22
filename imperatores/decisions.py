@@ -54,7 +54,7 @@ _WITHIN = {
     "face": {"continue", "hold", "face"},
     "advance_to": {"continue"},
     "withdraw_to": {"continue", "withdraw"},
-    "attack": {"continue", "attack"},
+    "attack": {"continue"},              # attacking the ordered body is checked by handle (review 006/3)
     "support": {"continue"},
 }
 
@@ -69,6 +69,7 @@ class OrderView:
     place: tuple | None = None
     target_at: tuple | None = None       # where the issuer described the target
     target_handle: int | None = None     # the track the officer took it to mean, once understood
+    toward: tuple | None = None          # for a face order
 
 
 @dataclass(frozen=True)
@@ -79,6 +80,7 @@ class SubView:
     y: float
     strength: int
     known_t: int                         # when he last saw or heard where it is (0: plan of battle)
+    home: tuple = (0.0, 0.0)             # its place in the plan of battle
 
 
 @dataclass(frozen=True)
@@ -160,6 +162,21 @@ def officer_picture(ctx: Context) -> dict:
     return pic
 
 
+def exposure_at(ctx: Context, heading: float) -> float:
+    """Danger to the officer's unit if it faced `heading` (review 006/5)."""
+    P = ctx.params
+    own = ctx.own
+    flank_a, rear_a = math.radians(P["flank_angle_deg"]), math.radians(P["rear_angle_deg"])
+    total = 0.0
+    for c in _enemies(ctx):
+        wgt = _weight(ctx, c, own["x"], own["y"], P["threat_radius_m"], own["fit"])
+        if wgt <= 0:
+            continue
+        off = abs(_wrap(math.atan2(c.y - own["y"], c.x - own["x"]) - heading))
+        total += wgt * (1.0 if off <= flank_a else (P["flank_factor"] if off <= rear_a else P["rear_factor"]))
+    return total
+
+
 def _danger_at(ctx: Context, x: float, y: float, read: list) -> float:
     R = ctx.params["threat_radius_m"]
     total = 0.0
@@ -192,24 +209,31 @@ def officer_options(ctx: Context):
     condition = own["fatigue"] * 0.5 + (1.0 - own["order"]) * 0.5
     losses = 1.0 - own["fit"] / max(own["start_strength"], 1)
 
-    def deviation(name: str, extra_ok: bool = False) -> float:
-        if within is None or name in within or extra_ok:
-            return 0.0
-        return -cost
+    def option(name: str, actions: list, comps: dict, ok: bool = False) -> Option:
+        """Whether an option goes beyond the standing order is recorded on its own (review
+        006/3); its cost is the latitude cost, which may be zero."""
+        beyond = within is not None and name.split(":")[0] not in within and not ok
+        comps["deviation"] = -cost if beyond else 0.0
+        return Option(name, actions, comps, beyond_orders=beyond)
 
     opts = [Option("continue", [], {"inertia": 0.25, "exposure": -danger * (1 - t.risk)})]
     if moving and danger > 0:                      # no reason to stop when he sees no danger
-        opts.append(Option("hold", [{"do": "order", "spec": {"kind": "hold"}}],
-                           {"exposure": -0.7 * danger * (1 - t.risk), "deviation": deviation("hold")}))
-    if pic["flank"] > 0 and pic["threats"]:
-        worst = next(c for _, c in pic["threats"])
-        exposure = danger - pic["flank"] + pic["flank_front"]
-        opts.append(Option("face", [{"do": "order", "spec": {"kind": "face", "toward": [worst.x, worst.y]}}],
-                           {"turning": -0.05, "exposure": -exposure * (1 - t.risk), "deviation": deviation("face")}))
+        opts.append(option("hold", [{"do": "order", "spec": {"kind": "hold"}}],
+                           {"exposure": -0.7 * danger * (1 - t.risk)}))
+    if pic["flank"] > 0:
+        # turn towards a threat that is actually on the flank or rear, rescoring every sector at
+        # the new heading (review 006/5); of the two heaviest such threats, the better heading
+        flank_a = math.radians(ctx.params["flank_angle_deg"])
+        side_threats = [c for _, c in pic["threats"]
+                        if abs(_wrap(math.atan2(c.y - own["y"], c.x - own["x"]) - own["facing"])) > flank_a][:2]
+        best = min(side_threats, key=lambda c: (exposure_at(ctx, math.atan2(c.y - own["y"], c.x - own["x"])), c.handle))
+        heading = math.atan2(best.y - own["y"], best.x - own["x"])
+        opts.append(option("face", [{"do": "order", "spec": {"kind": "face", "toward": [best.x, best.y]}}],
+                           {"turning": -0.05, "exposure": -exposure_at(ctx, heading) * (1 - t.risk)}))
     if danger > 0:
-        opts.append(Option("withdraw", [{"do": "order", "spec": {"kind": "withdraw_to", "place": list(ctx.home)}}],
+        opts.append(option("withdraw", [{"do": "order", "spec": {"kind": "withdraw_to", "place": list(ctx.home)}}],
                            {"giving_ground": -1.0, "exposure": -0.3 * danger * (1 - t.risk),
-                            "condition": condition + losses, "deviation": deviation("withdraw")}))
+                            "condition": condition + losses}))
     seen_targets = 0
     for _, c in pic["threats"]:
         if seen_targets >= 3:
@@ -217,11 +241,10 @@ def officer_options(ctx: Context):
         seen_targets += 1
         odds = own["fit"] / max(c.strength, 1)
         ordered = bool(ctx.standing and ctx.standing.kind == "attack" and ctx.standing.target_handle == c.handle)
-        opts.append(Option(f"attack:{c.handle}",
+        opts.append(option(f"attack:{c.handle}",
                            [{"do": "order", "spec": {"kind": "attack", "target_handle": c.handle}}],
                            {"opportunity": t.commitment * (min(odds, 3.0) - 1.0),
-                            "exposure": -danger * (1 - t.risk), "condition": -condition,
-                            "deviation": deviation("attack", ordered)}))
+                            "exposure": -danger * (1 - t.risk), "condition": -condition}, ok=ordered))
     opts = _settle(ctx, opts)
     side = []
     if (ctx.has_commander and ctx.trigger in ("contact", "flank") and danger > 0
@@ -239,8 +262,14 @@ def receipt_options(ctx: Context):
     risk = 0.0
     if o.kind == "advance_to" and o.place:
         risk = -_danger_at(ctx, o.place[0], o.place[1], read) * (1 - t.risk)
-    elif o.kind in ("attack", "support") and o.target_at:
-        risk = -_danger_at(ctx, o.target_at[0], o.target_at[1], read) * (1 - t.risk)
+    elif o.kind in ("attack", "support"):
+        # score where he would actually go: the track he took the order to mean (review 006/4)
+        mine = next((c for c in ctx.contacts if c.handle == o.target_handle), None)
+        at = (mine.x, mine.y) if mine is not None else o.target_at
+        if mine is not None and mine.handle not in read:
+            read.append(mine.handle)
+        if at:
+            risk = -_danger_at(ctx, at[0], at[1], read) * (1 - t.risk)
     here = _danger_at(ctx, own["x"], own["y"], read)
     condition = own["fatigue"] * 0.5 + (1.0 - own["order"]) * 0.5
     duty = 1.0 + ctx.params[f"latitude_cost_{o.latitude}"] * (1.0 - t.initiative)
@@ -251,12 +280,10 @@ def receipt_options(ctx: Context):
     return [obey, decline], read, []
 
 
-def commander_options(ctx: Context):
-    """A wing or army commander: wait, send a reserve forward, pull a threatened unit back, or
-    (army) sound the recall."""
-    t = ctx.tendencies
-    P = ctx.params
-    R = P["commander_threat_radius_m"]
+def commander_threats(ctx: Context):
+    """The threat a commander believes each unit under him faces, and the contacts read. This
+    is the unfiltered picture; what he has already done does not change it (review 006/6)."""
+    R = ctx.params["commander_threat_radius_m"]
     read: list = []
     threat = {}
     for s in ctx.subs:
@@ -268,6 +295,20 @@ def commander_options(ctx: Context):
                 if c.handle not in read:
                     read.append(c.handle)
         threat[s.id] = tot
+    return threat, read
+
+
+def threatened(ctx: Context) -> list:
+    threat, _ = commander_threats(ctx)
+    return sorted(i for i, v in threat.items() if v > 0)
+
+
+def commander_options(ctx: Context):
+    """A wing or army commander: wait, send a reserve forward, pull a threatened unit back, or
+    (army) sound the recall."""
+    t = ctx.tendencies
+    P = ctx.params
+    threat, read = commander_threats(ctx)
     sub_of = {s.id: s for s in ctx.subs}
     hot = sorted((sid for sid in threat if threat[sid] > 0), key=lambda i: (-threat[i], i))
     peak = threat[hot[0]] if hot else 0.0
@@ -291,7 +332,7 @@ def commander_options(ctx: Context):
     if hot:
         s = sub_of[hot[0]]
         opts.append(Option(f"withdraw:{s.id}",
-                           [{"do": "order", "recipient": s.id, "spec": {"kind": "withdraw_to", "place": "home"}}],
+                           [{"do": "order", "recipient": s.id, "spec": {"kind": "withdraw_to", "place": list(s.home)}}],
                            {"relief": threat[s.id] * (1 - t.risk), "giving_ground": -1.0,
                             "exposure": -(peak - threat[s.id]) * (1 - t.risk)}))
     if ctx.rank == "army" and len(hot) >= 2:
@@ -313,7 +354,6 @@ def _settle(ctx: Context, opts: list) -> list:
             continue
         if o.name != "continue":
             o.components["change_of_plan"] = -ctx.params["change_cost"]
-        o.beyond_orders = o.components.get("deviation", 0.0) < 0
         out.append(o)
     return out
 

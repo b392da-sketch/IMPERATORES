@@ -31,7 +31,7 @@ Which body the issuer meant, and which the recipient took, are kept in the world
 **Keys** (finding 10). Every order, message and signal has a stable random key of whole numbers,
 chosen so that unrelated actions never shift each other's draws:
   (issuer, 1, n)                     a decision (step 5), counted per issuer
-  (issuer, 4, k)                     scenario input number k (its position in the file)
+  (issuer, 4, h, d)                  a scenario input: h from its content, d among identical ones
   (relayer, 5, recipient, *parent)   an order relayed by a commander
   (entity, 6, k)                     the entity's plan entry k
   (entity, 7, *signal)               an entity's response to a signal
@@ -120,6 +120,7 @@ class Order:
     stages: list = field(default_factory=list)   # [stage, tick, detail]
     status: str = "decided"
     understood_handle: int | None = None
+    own_handle: int | None = None # an officer's own choice of track, for his own orders (review 006/1)
 
     def to_record(self) -> dict:
         return {"id": self.id, "key": list(self.key), "issuer": self.issuer, "recipient": self.recipient,
@@ -127,7 +128,7 @@ class Order:
                 "toward": list(self.toward) if self.toward else None,
                 "target": None if self.target is None else dict(vars(self.target)),
                 "origin": self.origin, "parent": self.parent, "status": self.status,
-                "understood_handle": self.understood_handle,
+                "understood_handle": self.understood_handle, "own_handle": self.own_handle,
                 "stages": [[s, t, dict(d)] for s, t, d in self.stages]}
 
 
@@ -217,7 +218,16 @@ def understand(w, o: Order, recipient_view) -> bool:
     if o.kind not in TARGET_KINDS:
         transition(w, o, "understood", {})
         return True
-    from .belief import compatible
+    from .belief import compatible, resolve
+    if o.own_handle is not None:
+        # his own order: he knows which track he meant; nothing to match (review 006/1)
+        h = resolve(w.beliefs[recipient_view.owner], o.own_handle)
+        if recipient_view.contact(h) is None:
+            fail(w, o, "understood", "the body he chose is no longer in his picture", {"handle": o.own_handle})
+            return False
+        o.understood_handle = h
+        transition(w, o, "understood", {"handle": h, "own_choice": True})
+        return True
     d = o.target
     best, best_d = None, math.inf
     for c in recipient_view.contacts:

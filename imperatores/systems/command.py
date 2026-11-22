@@ -149,7 +149,7 @@ def _cause(o: om.Order) -> list:
 # ---- issuing ----------------------------------------------------------------------------------
 
 def issue(w, issuer: int, recipient: int, spec: dict, origin: str, key: tuple, oid: str,
-          parent=None, intended=None) -> om.Order:
+          parent=None, intended=None, own_handle=None) -> om.Order:
     """Create an order and put it in the issuer's outbox (or deliver it at once if self-addressed)."""
     belief_mod_ensure(w)
     if not may_order(w, issuer, recipient):
@@ -163,6 +163,10 @@ def issue(w, issuer: int, recipient: int, spec: dict, origin: str, key: tuple, o
         o.target = target_spec
     elif o.kind in om.TARGET_KINDS:
         o.target, intended = describe_target(w, issuer, target_spec)
+    if own_handle is not None:
+        if issuer != recipient:
+            raise ValueError("an own choice of track is only for an officer's own orders")
+        o.own_handle = int(own_handle)
     w.orders[oid] = o
     if intended is not None:
         w.audit[oid] = {"intended": intended}
@@ -198,7 +202,7 @@ def send_report(w, sender: int, recipient: int, key: tuple, cause: dict | None =
     contacts = belief_mod.view(w, sender).contacts          # immutable values, captured now
     m = om.Message(id=mid, key=tuple(key), kind="report", sender=sender, recipient=recipient, created_t=w.tick,
                    contacts=contacts)
-    om.fold(w, "report", mid, list(key), recipient, len(contacts))
+    om.fold(w, "report", mid, list(key), recipient, [belief_mod.astuple_c(c) for c in contacts])
     record.log(w, "report_written", sender, {"message": mid, "recipient": recipient, "contacts": len(contacts)},
                [cause or {"note": "report input"}])
     if not alive(w, sender):
@@ -509,18 +513,18 @@ def check_plans(w) -> None:
 
 
 def run_inputs(w) -> None:
-    """Scenario inputs, keyed by their position in the file (finding 10)."""
+    """Scenario inputs, keyed by their content (reviews 005/10 and 006/9)."""
     while w.inputs and w.inputs[0][0] <= w.tick:
-        _, kind, spec, k = w.inputs.pop(0)
+        _, kind, spec, (h, dup) = w.inputs.pop(0)
         if kind == "order":
             i = spec["issuer"]
             issue(w, i, spec["recipient"], {a: v for a, v in spec.items() if a not in ("issuer", "recipient")},
-                  origin="input", key=(i, om.KEY_INPUT, k), oid=f"{i}.{next_seq(w, i, 'order')}")
+                  origin="input", key=(i, om.KEY_INPUT, h, dup), oid=f"{i}.{next_seq(w, i, 'order')}")
         elif kind == "report":
-            send_report(w, spec["sender"], spec["recipient"], key=(spec["sender"], om.KEY_INPUT, k))
+            send_report(w, spec["sender"], spec["recipient"], key=(spec["sender"], om.KEY_INPUT, h, dup))
         elif kind == "signal":
             i = spec["issuer"]
-            emit_signal(w, i, spec["meaning"], spec.get("to", "all"), key=(i, om.KEY_INPUT, k),
+            emit_signal(w, i, spec["meaning"], spec.get("to", "all"), key=(i, om.KEY_INPUT, h, dup),
                         sid=f"{i}.s{next_seq(w, i, 'signal')}")
 
 
