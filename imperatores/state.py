@@ -63,6 +63,10 @@ class Entity:
     succession: list[Officer] = field(default_factory=list)
     equipment: Equipment = field(default_factory=lambda: Equipment(reach="sword"))
     parents: list[int] = field(default_factory=list)   # stable ids, e.g. velites linked to their maniples
+    # engine-owned movement state (never supplied by scenarios; Codex review 003, finding 9)
+    route: list | None = None                    # remaining waypoints of the current move
+    route_for: list | None = None                # the target [x, y] the route was planned for
+    blocked_ticks: int = 0                       # consecutive ticks a step was blocked
 
     @property
     def formed(self) -> bool:

@@ -159,14 +159,24 @@ class Consistency(unittest.TestCase):
         self.assertLess(rough_w.entity(HASTATI_I).order, 1.0)
         self.assertEqual(open_w.entity(HASTATI_I).order, 1.0)
 
-    def test_blocked_move_costs_nothing(self):                  # Codex 002/8
+    def test_blocked_move_costs_nothing_then_replans(self):  # Codex 002/8, 003/2
         w = scenario.load(MARCH, 1)
         e = w.entities[0]
-        e.x = 4000.0
-        e.task = {"kind": "move_to", "x": 4100, "y": e.y}       # target off the field, set directly
+        engine.step(w, 40)                                      # wheeled and marching
+        x0, f0 = e.x, e.fatigue
+        with mock.patch.object(type(w.terrain), "segment_passable", return_value=False):
+            engine.step(w, int(w.params["stall_replan_ticks"]) - 1)
+            self.assertEqual((e.x, e.fatigue), (x0, f0))        # blocked steps cost nothing
+            engine.step(w)
+        self.assertIn(("replanned", e.id), [(ev["kind"], ev["entity"]) for ev in w.events])
+
+    def test_target_off_the_field_halts_with_a_reason(self):
+        w = scenario.load(MARCH, 1)
+        e = w.entities[0]
+        e.task = {"kind": "move_to", "x": 4100.0, "y": e.y}      # set directly, bypassing the loader
         engine.step(w)
-        self.assertEqual(e.x, 4000.0)
-        self.assertEqual(e.fatigue, 0.0)
+        self.assertEqual(e.task, {"kind": "hold"})
+        self.assertIn(("no_route", e.id), [(ev["kind"], ev["entity"]) for ev in w.events])
 
 
 class Events(unittest.TestCase):

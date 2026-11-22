@@ -34,6 +34,15 @@ def _entity(d: dict) -> Entity:
     strength = _int(d, "strength", f"entity {name}")
     if strength <= 0:
         raise ValueError(f"entity {name}: strength must be positive")
+    task = dict(d.get("task", {"kind": "hold"}))
+    allowed = {"hold": {"kind"}, "move_to": {"kind", "x", "y"}}
+    if task.get("kind") not in allowed:
+        raise ValueError(f"entity {name}: unknown task kind {task.get('kind')!r}")
+    extra = set(task) - allowed[task["kind"]]
+    if extra:
+        raise ValueError(f"entity {name}: task has keys a scenario may not set: {sorted(extra)}")
+    if task["kind"] == "move_to":
+        task["x"], task["y"] = float(task["x"]), float(task["y"])
     eq = d.get("equipment", {})
     return Entity(
         id=eid, side=d["side"], name=name, function=d["function"],
@@ -41,7 +50,7 @@ def _entity(d: dict) -> Entity:
         x=float(d["x"]), y=float(d["y"]), facing=math.radians(float(d.get("facing_deg", 0.0))),
         frontage=float(d["frontage"]), depth=float(d["depth"]),
         start_strength=strength, fit=strength,
-        task=dict(d.get("task", {"kind": "hold"})),
+        task=task,
         succession=[Officer(rank=r) for r in d.get("succession", [])],
         equipment=Equipment(reach=eq.get("reach", "sword"), missiles=dict(eq.get("missiles", {})),
                             protection=eq.get("protection", "medium"), mobility=eq.get("mobility", "foot")),

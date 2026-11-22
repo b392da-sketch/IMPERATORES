@@ -37,7 +37,8 @@ def log(w, kind: str, entity: int | None, data: dict | None = None, causes: list
 def state_bytes(w) -> bytes:
     """Full-precision state of every entity (floats as shortest round-trip repr)."""
     rows = [[e.id, e.x, e.y, e.facing, e.fit, e.wounded, e.dead, e.fled, e.captured,
-             e.fatigue, e.order, e.resolve, e.task] for e in w.entities]
+             e.fatigue, e.order, e.resolve, e.task, e.route, e.route_for, e.blocked_ticks]
+            for e in w.entities]
     cmds = [[c.id, c.x, c.y, c.alive] for c in w.commanders]
     return json.dumps([w.tick, rows, cmds, w.belief_trace], sort_keys=True, separators=(",", ":"),
                       allow_nan=False).encode()

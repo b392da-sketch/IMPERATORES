@@ -138,14 +138,22 @@ class Routes(unittest.TestCase):
                     crossed.append((x, y))
         self.assertTrue(crossed, "route must use the ford")
 
-    def test_formed_troops_go_round_woods_when_it_is_quicker(self):
+    def test_formed_troops_avoid_most_of_a_wood_when_it_is_quicker(self):
         t = flat(woods=[[900, 300, 1100, 700]])
-        r = pathing.plan(t, P, "formed", 100, 500, 1900, 500)
+        f = pathing.factor_grid(t, P, "formed")
+        st = {}
+        r = pathing.plan(t, P, "formed", 100, 500, 1900, 500, st)
+        through = pathing.segment_cost(t, f, 100, 500, 1900, 500)
+        self.assertLess(st["cost"], through)                 # quicker than marching straight through
+        self.assertLessEqual(st["cost"], st["raw_cost"] + 1e-9)
         pts = [(100, 500)] + r
+        in_wood = 0.0
         for (ax, ay), (bx, by) in zip(pts, pts[1:]):
-            for k in range(101):
-                x, y = ax + (bx - ax) * k / 100, ay + (by - ay) * k / 100
-                self.assertNotEqual(t.ground_at(x, y), WOODS)
+            for k in range(400):
+                x, y = ax + (bx - ax) * (k + 0.5) / 400, ay + (by - ay) * (k + 0.5) / 400
+                if t.ground_at(x, y) == WOODS:
+                    in_wood += math.hypot(bx - ax, by - ay) / 400
+        self.assertLess(in_wood, 40.0)                       # at most a corner, not the 200 m depth
 
     def test_no_route(self):
         t = flat(stream={"width": 10, "points": [[1000, 0], [1000, 1000]]})

@@ -55,6 +55,8 @@ PARAMS: dict[str, Param] = {
     "pace_ford_formed": Param(0.4, 0.2, 0.8, ASSUMPTION, "formed foot crossing at a ford", ""),
     "pace_ford_open": Param(0.5, 0.2, 0.9, ASSUMPTION, "open-order foot crossing at a ford", ""),
     "pace_ford_horse": Param(0.5, 0.2, 0.9, ASSUMPTION, "horse crossing at a ford", ""),
+    "slope_lookahead_m": Param(5.0, 2.0, 20.0, ASSUMPTION, "distance ahead over which the gradient is measured for the uphill slowing", "m"),
+    "stall_replan_ticks": Param(5, 1, 60, ASSUMPTION, "after this many consecutive blocked steps an entity replans its route; if no route exists it halts and the stall is recorded", "ticks", integer=True),
     "slope_pace_k": Param(4.0, 0.0, 10.0, ASSUMPTION, "uphill slowing: pace divided by (1 + k x gradient); no effect downhill in M0", ""),
     # ground: loss of order per 100 m actually crossed, formed troops only
     "order_loss_rough_per_100m": Param(0.05, 0.0, 0.2, ASSUMPTION, "formed troops crossing rough ground", ""),
@@ -69,8 +71,6 @@ PARAMS: dict[str, Param] = {
                            "physical upper limit (a galloping horse): movement is capped at it, and the consistency check enforces it independently", "m/s"),
 
     # sight (step 2)
-    "sight_sample_spacing_cells": Param(1.0, 0.25, 1.0, ASSUMPTION,
-                                        "numerical resolution: sight lines are checked every this many terrain cells (the terrain itself is no finer than one cell)", "cells"),
     "sight_range_max": Param(3000.0, 1000.0, 6000.0, ASSUMPTION, "furthest distance at which a formed body can be seen at all in clear weather", "m"),
     "sight_range_in_woods": Param(60.0, 20.0, 150.0, ASSUMPTION, "how far one sees inside a wood, or how close one must be to see into it", "m"),
     "wood_canopy_height": Param(12.0, 5.0, 25.0, ASSUMPTION, "height of a wood's canopy above the ground, for blocking sight", "m"),
