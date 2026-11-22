@@ -37,6 +37,10 @@ def check_all(w, when: str) -> None:
         problems = commander_problems(c, w.terrain)
         if problems:
             raise ConsistencyError(f"tick {w.tick} ({when}): commander {c.name} (id {c.id}): " + "; ".join(problems))
+    from .command import staff_problems         # messengers are conserved too (review 005/3)
+    problems = staff_problems(w)
+    if problems:
+        raise ConsistencyError(f"tick {w.tick} ({when}): " + "; ".join(problems))
 
 
 def begin_tick(w) -> None:

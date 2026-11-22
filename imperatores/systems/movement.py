@@ -14,7 +14,9 @@ target changes. Scenarios cannot supply them.
 Approach (step 4): an "approach" task (from an attack or support order) moves towards where
 the entity's own officer believes the body is (his track, never the true position), stopping
 `standoff` metres short. The route is replanned when the believed position moves more than
-`approach_replan_m`. If the track is gone from his picture, he halts and it is recorded.
+`approach_replan_m`, and whenever the route is used up short of the believed point (Codex
+review 005, finding 5). If the officer merges the track into another, the task follows the
+merge. If the track is gone from his picture, he halts and it is recorded.
 
 Following a route (finding 2): an entity moves straight towards its current waypoint, so it
 stays on the leg the planner checked. A formed body must first wheel until its facing is
@@ -32,7 +34,7 @@ from __future__ import annotations
 
 import math
 
-from .. import pathing, record
+from .. import belief, pathing, record
 from ..terrain import FORD, ROUGH, WOODS
 
 _ORDER_LOSS = {ROUGH: "order_loss_rough_per_100m", WOODS: "order_loss_woods_per_100m",
@@ -64,7 +66,14 @@ def _cause(e) -> list:
 def _approach_point(w, e):
     """Where an approaching entity is heading: standoff short of its officer's believed position
     of the body. None if the track is no longer in his picture."""
-    c = w.beliefs.get(e.id).tracks.get(e.task["handle"]) if e.id in w.beliefs else None
+    b = w.beliefs.get(e.id)
+    if b is None:
+        return None
+    h = belief.resolve(b, e.task["handle"])
+    if h != e.task["handle"]:                       # the officer merged this track into another (review 005/7)
+        record.log(w, "target_track_merged", e.id, {"from": e.task["handle"], "to": h}, _cause(e))
+        e.task["handle"] = h
+    c = b.tracks.get(h)
     if c is None:
         return None
     dx, dy = c.x - e.x, c.y - e.y
@@ -133,7 +142,7 @@ def step(w) -> None:
             continue
         else:
             target = [float(e.task["x"]), float(e.task["y"])]
-        if e.route is None or (e.task["kind"] == "move_to" and e.route_for != target):
+        if not e.route or (e.task["kind"] == "move_to" and e.route_for != target):   # review 005/5: a used-up route is replanned
             if not _plan(w, e, "new target"):
                 continue
 
@@ -146,8 +155,11 @@ def step(w) -> None:
             record.log(w, "arrived", e.id, {"x": e.x, "y": e.y, "target": target},
                        cause + [{"note": "reached its movement target"}])
             continue
-        if dist <= 1e-9:                               # exactly on an intermediate waypoint
-            e.route.pop(0)
+        if dist <= 1e-9:
+            if final:                                  # at the end of a route planned for an older goal
+                e.route = e.route_for = None
+            else:                                      # exactly on an intermediate waypoint
+                e.route.pop(0)
             continue
 
         want = math.atan2(wy - e.y, wx - e.x)

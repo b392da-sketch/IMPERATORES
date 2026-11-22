@@ -82,8 +82,9 @@ def _commander(d: dict) -> Commander:
                      mobility=d.get("mobility", "horse"), commands=[int(i) for i in d.get("commands", [])])
 
 
-def _order_spec(d: dict, what: str) -> dict:
-    """Validate an order specification (plan instruction or input)."""
+def _order_spec(d: dict, what: str, terrain=None) -> dict:
+    """Validate an order specification (plan instruction or input). A place must be on
+    passable ground (Codex review 005, finding 6)."""
     kind = d.get("kind")
     if kind not in om.ORDER_KINDS:
         raise ValueError(f"{what}: unknown order kind {kind!r}")
@@ -95,6 +96,8 @@ def _order_spec(d: dict, what: str) -> dict:
         pl = d.get("place")
         if not (isinstance(pl, list) and len(pl) == 2):
             raise ValueError(f"{what}: {kind} needs a place [x, y]")
+        if terrain is not None and not terrain.passable(float(pl[0]), float(pl[1])):
+            raise ValueError(f"{what}: the place {pl} is off the field or in the stream")
     if kind in om.TARGET_KINDS:
         allowed.add("target")
         tg = d.get("target")
@@ -106,13 +109,24 @@ def _order_spec(d: dict, what: str) -> dict:
     return dict(d)
 
 
-def _plan(d: dict, e: Entity, terrain) -> om.Plan:
+def _plan(d: dict, e: Entity, terrain, commanders: set) -> om.Plan:
+    """Every entity has a plan: its home (by default where it deploys, finding 9) and any
+    conditional instructions. An instruction may name the emitters whose signals it obeys
+    ("from"); by default only the entity's own commanders bind it."""
+    unknown = set(d) - {"home", "on"}
+    if unknown:
+        raise ValueError(f"entity {e.name}: plan has unknown keys {sorted(unknown)}")
     home = d.get("home", [e.x, e.y])
     if not terrain.passable(float(home[0]), float(home[1])):
         raise ValueError(f"entity {e.name}: plan home is not on passable ground")
     entries = []
     for k, entry in enumerate(d.get("on", [])):
+        if set(entry) - {"when", "do", "from"}:
+            raise ValueError(f"entity {e.name}: plan entry {k} has unknown keys")
         when, do = entry.get("when"), entry.get("do")
+        frm = entry.get("from")
+        if frm is not None and not (isinstance(frm, list) and set(frm) <= commanders):
+            raise ValueError(f"entity {e.name}: plan entry {k}: 'from' must list commanders")
         if not isinstance(when, dict) or len(when) != 1:
             raise ValueError(f"entity {e.name}: plan entry {k} needs one 'when' condition")
         (cond, val), = when.items()
@@ -126,11 +140,61 @@ def _plan(d: dict, e: Entity, terrain) -> om.Plan:
             float(val)
         else:
             raise ValueError(f"entity {e.name}: plan entry {k}: unknown condition {cond!r}")
-        entries.append({"when": dict(when), "do": _order_spec(do or {}, f"entity {e.name} plan entry {k}"), "fired": False})
+        if "from" in entry and cond != "signal":
+            raise ValueError(f"entity {e.name}: plan entry {k}: 'from' applies only to signals")
+        entries.append({"when": dict(when), "do": _order_spec(do or {}, f"entity {e.name} plan entry {k}", terrain),
+                        "from": None if frm is None else sorted(int(i) for i in frm), "fired": False})
     return om.Plan(home=(float(home[0]), float(home[1])), on=entries)
 
 
-def _inputs(spec: list, everyone: set, commanders: set, tick_s: float) -> list:
+def subordinates(commanders: dict, cid: int) -> set:
+    """Everyone under a commander, at any depth (the graph is checked acyclic first)."""
+    out, todo = set(), list(commanders[cid].commands)
+    while todo:
+        i = todo.pop()
+        if i in out:
+            continue
+        out.add(i)
+        if i in commanders:
+            todo.extend(commanders[i].commands)
+    return out
+
+
+def _check_command_graph(commanders: list, everyone: set, sides: dict) -> None:
+    """Finding 11: each id is commanded by at most one commander, once; an army commander
+    commands wings and entities, a wing commander only entities; no cycles."""
+    by_id = {c.id: c for c in commanders}
+    seen = {}
+    for c in commanders:
+        if len(set(c.commands)) != len(c.commands):
+            raise ValueError(f"commander {c.name}: commands the same id twice")
+        for i in c.commands:
+            if i not in everyone or i == c.id:
+                raise ValueError(f"commander {c.name}: commands unknown id {i}")
+            if sides[i] != c.side:
+                raise ValueError(f"commander {c.name}: commands id {i} on the other side")
+            if i in seen:
+                raise ValueError(f"id {i} is commanded by both {seen[i]} and {c.id}")
+            seen[i] = c.id
+            if i in by_id and (c.rank != "army" or by_id[i].rank != "wing"):
+                raise ValueError(f"commander {c.name} ({c.rank}) cannot command commander {i} ({by_id[i].rank})")
+    for c in commanders:                       # with the rank rule, a cycle is impossible; check anyway
+        stack, path = [c.id], set()
+        while stack:
+            i = stack.pop()
+            if i == c.id and path:
+                raise ValueError(f"commander {c.name}: command cycle")
+            if i in path:
+                continue
+            path.add(i)
+            if i in by_id:
+                stack.extend(by_id[i].commands)
+
+
+def _inputs(spec: list, everyone: set, commanders: dict, sides: dict, terrain, tick_s: float) -> list:
+    """Inputs with authority checked (finding 1): an order goes from a commander to someone in
+    his command, or from an entity to itself; a report goes to a commander on the same side;
+    a signal comes from a living commander and is addressed within his command."""
     out = []
     for k, d in enumerate(spec):
         what = f"input {k}"
@@ -141,23 +205,31 @@ def _inputs(spec: list, everyone: set, commanders: set, tick_s: float) -> list:
         kind = kinds[0]
         body = dict(d[kind])
         if kind == "order":
-            if body.get("issuer") not in everyone or body.get("recipient") not in everyone:
+            i, r = body.get("issuer"), body.get("recipient")
+            if i not in everyone or r not in everyone:
                 raise ValueError(f"{what}: unknown issuer or recipient")
-            _order_spec({k2: v for k2, v in body.items() if k2 not in ("issuer", "recipient")}, what)
+            if not (i == r and i not in commanders) and not (i in commanders and r in subordinates(commanders, i)):
+                raise ValueError(f"{what}: {i} has no authority to order {r}")
+            _order_spec({k2: v for k2, v in body.items() if k2 not in ("issuer", "recipient")}, what, terrain)
         elif kind == "report":
-            if body.get("sender") not in everyone or body.get("recipient") not in everyone or set(body) != {"sender", "recipient"}:
-                raise ValueError(f"{what}: a report needs a known sender and recipient")
+            sd, r = body.get("sender"), body.get("recipient")
+            if sd not in everyone or r not in commanders or set(body) != {"sender", "recipient"} or sd == r:
+                raise ValueError(f"{what}: a report needs a known sender and a commander to receive it")
+            if sides[sd] != sides[r]:
+                raise ValueError(f"{what}: a report goes to a commander on the sender's own side")
         else:
             if body.get("issuer") not in commanders:
                 raise ValueError(f"{what}: signals are given by commanders")
             if not om.valid_signal(body.get("meaning", "")):
                 raise ValueError(f"{what}: unknown signal {body.get('meaning')!r}")
             to = body.get("to", "all")
-            if to != "all" and not (isinstance(to, list) and set(to) <= everyone):
-                raise ValueError(f"{what}: 'to' must be 'all' or a list of known ids")
+            if to != "all" and not (isinstance(to, list) and set(to) <= subordinates(commanders, body["issuer"])):
+                raise ValueError(f"{what}: 'to' must be 'all' or a list of ids in the issuer's command")
+            if set(body) - {"issuer", "meaning", "to"}:
+                raise ValueError(f"{what}: unexpected keys in the signal")
         out.append([t, k, kind, body])
     out.sort(key=lambda r: (r[0], r[1]))
-    return [[t, kind, body] for t, _, kind, body in out]
+    return [[t, kind, body, k] for t, k, kind, body in out]
 
 
 def load(path: str | Path, seed: int, overrides: dict | None = None) -> World:
@@ -172,12 +244,7 @@ def load(path: str | Path, seed: int, overrides: dict | None = None) -> World:
     known = {e.id for e in entities}
     everyone = set(ids)
     sides = {e.id: e.side for e in entities} | {c.id: c.side for c in commanders}
-    for c in commanders:
-        for i in c.commands:
-            if i not in everyone or i == c.id:
-                raise ValueError(f"commander {c.name}: commands unknown id {i}")
-            if sides[i] != c.side:
-                raise ValueError(f"commander {c.name}: commands id {i} on the other side")
+    _check_command_graph(commanders, everyone, sides)
     for e in entities:
         for p in e.parents:
             if p not in known:
@@ -189,11 +256,12 @@ def load(path: str | Path, seed: int, overrides: dict | None = None) -> World:
     w = World.new(spec.get("name", Path(path).stem), seed, terrain, entities,
                   overrides=overrides, scenario_digest=hashlib.sha256(raw).hexdigest(),
                   commanders=commanders)
-    by_name = {d.get("id"): d for d in spec["entities"]}
+    by_id = {d.get("id"): d for d in spec["entities"]}
+    cmd_ids = {c.id for c in commanders}
     for e in entities:
-        if "plan" in by_name[e.id]:
-            w.plans[e.id] = _plan(by_name[e.id]["plan"], e, terrain)
-    w.inputs = _inputs(spec.get("inputs", []), everyone, {c.id for c in commanders}, w.params["tick_seconds"])
+        w.plans[e.id] = _plan(by_id[e.id].get("plan", {}), e, terrain, cmd_ids)
+    w.inputs = _inputs(spec.get("inputs", []), everyone, {c.id: c for c in commanders}, sides, terrain,
+                       w.params["tick_seconds"])
     for c in commanders:
         if c.side not in ("A", "B"):
             raise ValueError("commander side")

@@ -104,6 +104,8 @@ PARAMS: dict[str, Param] = {
     "messenger_speed_foot": Param(2.5, 1.5, 4.0, ASSUMPTION, "a runner's speed across the field", "m/s"),
     "messenger_sight_m": Param(400.0, 100.0, 1000.0, ASSUMPTION, "how far a messenger can pick out the body he is looking for", "m"),
     "deliver_radius_m": Param(30.0, 10.0, 80.0, ASSUMPTION, "how close a messenger must come to deliver", "m"),
+    "messenger_retarget_m": Param(20.0, 5.0, 100.0, ASSUMPTION, "a messenger replans his route when where he is riding to moves by more than this", "m"),
+    "messenger_wait_timeout_s": Param(1800.0, 300.0, 3600.0, ASSUMPTION, "a message waiting this long for a free messenger is given up", "s"),
     "search_time_s": Param(300.0, 60.0, 900.0, ASSUMPTION, "how long a messenger searches where he expected the recipient before giving up", "s"),
     "intercept_radius_m": Param(150.0, 50.0, 400.0, ASSUMPTION, "enemy troops within this distance, who can see him, may catch a messenger", "m"),
     "intercept_per_min": Param(0.5, 0.0, 3.0, ASSUMPTION, "chance per minute (as a rate) of being caught while within reach and sight of enemy troops", "/min"),

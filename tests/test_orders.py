@@ -146,10 +146,10 @@ class Failures(unittest.TestCase):
                   terrain=terr, overrides={"order_target_radius_m": 400.0})
         run_until(w, lambda: w.orders.get("900.1") and w.orders["900.1"].status in ("failed", "executed"))
         o = w.orders["900.1"]
-        self.assertEqual(o.intended, 50)
-        und = [s for s in o.stages if s[0] == "understood"]
-        self.assertTrue(und, o.stages)
-        self.assertEqual(und[0][2].get("misread"), {"meant": 50, "took": 51})
+        self.assertIn("understood", stages(w, "900.1"))
+        self.assertEqual(w.audit["900.1"]["intended"], 50)          # kept in the audit, not on the order
+        self.assertEqual(w.audit["900.1"]["misread"], {"meant": 50, "took": 51})
+        self.assertFalse(hasattr(o, "intended"))
 
     def test_disordered_entity_waits_then_the_order_lapses(self):
         w = world([ent(1, "A", 1000, 1500)], [army()],

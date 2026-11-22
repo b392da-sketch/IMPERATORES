@@ -149,8 +149,12 @@ class World:
     outbox: dict = field(default_factory=dict)       # sender id -> [orders.Message] waiting for a messenger
     messengers: list = field(default_factory=list)   # orders.Messenger, in dispatch order
     staff: dict = field(default_factory=dict)        # sender id -> messengers at hand
-    seq: dict = field(default_factory=dict)          # sender id -> next message number
-    plans: dict = field(default_factory=dict)        # entity id -> orders.Plan
+    seq: dict = field(default_factory=dict)          # (sender id, "order"|"report"|"signal") -> last number used
+    staff_initial: dict = field(default_factory=dict)  # sender id -> messengers he started with
+    delivered: set = field(default_factory=set)      # message ids already handed over (delivery is idempotent)
+    audit: dict = field(default_factory=dict)        # order id -> {"intended", "took", "misread"}: record only, never read by decisions
+    command_hasher: object = field(default_factory=hashlib.sha256)  # every command-state change is folded in
+    plans: dict = field(default_factory=dict)        # entity id -> orders.Plan (every entity has one: its home at least)
     pending: dict = field(default_factory=dict)      # entity id -> [order id, tick it began waiting]
     inputs: list = field(default_factory=list)       # scenario inputs: [tick, kind, spec], in order
     by_id: dict[int, Entity] = field(default_factory=dict)
@@ -170,6 +174,10 @@ class World:
     @property
     def belief_trace(self) -> str:
         return self.belief_hasher.hexdigest()
+
+    @property
+    def command_trace(self) -> str:
+        return self.command_hasher.hexdigest()
 
     @property
     def time(self) -> float:

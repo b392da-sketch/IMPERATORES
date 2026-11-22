@@ -17,10 +17,13 @@ The boundary (findings 1 and 2):
 Tracking rules (all recorded in docs/M0_BUILD_NOTES.md as assumptions):
   * while a body stays in sight (seen again within `track_gap_s`), the observer keeps track of
     which body it is;
+  * links to bodies not seen within `track_gap_s` are dropped before any new sighting is
+    associated, so association never depends on which true body is seen (review 005/7);
   * after a longer gap, a body is re-identified as the same body only if it is recognised
     (seen within recognition range, where standards and equipment identify a particular
-    body); otherwise it becomes a new track, and the old one remains, possibly as a
-    duplicate, until it is recognised again;
+    body); otherwise it is matched by what is seen (side, kind, position) to a track not
+    currently linked, or becomes a new track, and an old one may remain as a duplicate until
+    the body is recognised; merging leaves a redirect from the old handle to the new;
   * a reported body is matched to a track by what is known about it (side, kind, position),
     never by its true identity;
   * an observer can tell friend from foe for any body he sees;
@@ -94,6 +97,7 @@ class Belief:
     tracks: dict = field(default_factory=dict)       # handle -> Contact
     _truth: dict = field(default_factory=dict)       # true entity id -> handle (sightings only; never exposed)
     _former: dict = field(default_factory=dict)      # handle -> true id, for tracks whose link was lost (never exposed)
+    redirects: dict = field(default_factory=dict)    # handle -> handle: tracks the owner merged into another (his own knowledge)
     _next: int = 1
 
     def _new_handle(self) -> int:
@@ -120,6 +124,36 @@ def astuple_c(c: Contact) -> tuple:
             c.seen_t, c.first_seen_t, c.source, c.report_from, c.received_t)
 
 
+def _link(w, b: Belief, tag: str, true_id: int, h: int) -> None:
+    """Fold a change to the private tracking links into the replay hash (finding 8)."""
+    w.belief_hasher.update(repr((tag, b.owner, int(true_id), int(h), w.tick)).encode())
+
+
+def age_links(w, b: Belief) -> None:
+    """Drop every link to a body not seen within track_gap_s, before any sighting is associated
+    (Codex review 005, finding 7). Association then sees the same tracks whichever true body
+    the new sighting happens to be, so identical observations give identical handles."""
+    P = w.params
+    gap_ticks = P["track_gap_s"] / P["tick_seconds"]
+    for tid in sorted(b._truth):
+        h = b._truth[tid]
+        c = b.tracks.get(h)
+        if c is None or w.tick - c.seen_t > gap_ticks:
+            del b._truth[tid]
+            if c is not None:
+                b._former[h] = tid       # remembered internally, so recognition can merge them later
+            _link(w, b, "unlinked", tid, h)
+
+
+def resolve(b: Belief, h):
+    """The handle a track goes by now, following the owner's own merges."""
+    seen = set()
+    while h in b.redirects and h not in seen:
+        seen.add(h)
+        h = b.redirects[h]
+    return h
+
+
 def _associate(b: Belief, side: str, kind: str, x: float, y: float, radius: float, only_unlinked: bool):
     linked = set(b._truth.values())
     best, best_d = None, math.inf
@@ -138,6 +172,7 @@ def _associate(b: Belief, side: str, kind: str, x: float, y: float, radius: floa
 def apply_sighting(w, owner: int, true_id: int, side: str, kind: str, x: float, y: float, pos_err: float,
                    strength: int, order, facing, recognised: bool) -> int:
     """Record one direct sighting of the body with true identity `true_id` (validated). Returns the handle."""
+    age_links(w, w.beliefs[owner])
     c = _sighting(w, owner, true_id, side, kind, x, y, pos_err, strength, order, facing, recognised, check=True)
     _fold(w, owner, c, c.handle, "seen")
     return c.handle
@@ -162,6 +197,8 @@ def apply_sightings(w, owners, true_ids, sides, kinds, xs, ys, pos_errs, strengt
         raise ValueError("judged facing must be finite")
     if not set(sides) <= set(SIDES) or not set(kinds) <= set(KINDS):
         raise ValueError("sighting side or kind not recognised")
+    for o_ in sorted({int(o) for o in owners}):
+        age_links(w, w.beliefs[o_])
     handles = np.empty(len(owners), dtype=np.int64)
     firsts = np.empty(len(owners), dtype=np.int64)
     for k in range(len(owners)):
@@ -182,28 +219,35 @@ def apply_sightings(w, owners, true_ids, sides, kinds, xs, ys, pos_errs, strengt
 def _sighting(w, owner, true_id, side, kind, x, y, pos_err, strength, order, facing, recognised, check):
     b = w.beliefs[owner]
     P = w.params
-    gap_ticks = P["track_gap_s"] / P["tick_seconds"]
-    h = b._truth.get(true_id)
+    h = b._truth.get(true_id)                # links were aged out before this batch (age_links)
     old = b.tracks.get(h) if h is not None else None
-    if old is not None and not (w.tick - old.seen_t <= gap_ticks or recognised):
-        del b._truth[true_id]            # lost track: this sighting is not known to be the same body
-        b._former[h] = true_id           # remembered internally, so recognition can merge them later
-        h, old = None, None
     if h is None:
-        h = _associate(b, side, kind, x, y, P["report_assoc_radius_m"], only_unlinked=True)
+        mine = sorted(k for k, tid in b._former.items() if tid == true_id and k in b.tracks)
+        if recognised and mine:
+            # recognised: identified individually (standards, equipment), so it is his old track
+            h = max(mine, key=lambda k: (b.tracks[k].seen_t, k))
+        else:
+            h = _associate(b, side, kind, x, y, P["report_assoc_radius_m"], only_unlinked=True)
         old = b.tracks.get(h) if h is not None else None
         if h is None:
             h = b._new_handle()
         b._truth[true_id] = h
+        _link(w, b, "linked", true_id, h)
     b._former.pop(h, None)
     first_seen = old.first_seen_t if old is not None else w.tick
     if recognised:
-        # a recognised body is identified individually: fold its older duplicate tracks into this one
+        # a recognised body is identified individually: fold its older duplicate tracks into this
+        # one, and leave a redirect so orders and tasks that name the old track follow it
         for hh in sorted(k for k, tid in b._former.items() if tid == true_id and k != h):
             if hh in b.tracks:
                 first_seen = min(first_seen, b.tracks[hh].first_seen_t)
                 del b.tracks[hh]
+                b.redirects[hh] = h
+                for k2 in sorted(b.redirects):
+                    if b.redirects[k2] == hh:
+                        b.redirects[k2] = h
                 _fold(w, owner, None, hh, "merged")
+                _link(w, b, "redirect", hh, h)
             del b._former[hh]
     if old is not None and _SPECIFICITY[old.kind] > _SPECIFICITY[kind] and compatible(old.kind, kind):
         kind = old.kind                  # still the same tracked body: what was recognised stays known
@@ -287,9 +331,15 @@ def to_record(b: Belief) -> dict:
     """A detached copy for the record and tests: plain dicts, nothing shared with the belief."""
     return {"owner": b.owner, "tracks": [asdict(b.tracks[h]) for h in sorted(b.tracks)],
             "truth": {str(k): v for k, v in sorted(b._truth.items())},
-            "former": {str(k): v for k, v in sorted(b._former.items())}}
+            "former": {str(k): v for k, v in sorted(b._former.items())},
+            "redirects": {str(k): v for k, v in sorted(b.redirects.items())}}
 
 
 def handle_of(b: Belief, true_id: int):
-    """For tests and the record only: the owner's current track for a true body, if linked."""
-    return b._truth.get(true_id)
+    """For tests, the record, and a sender finding his own friendly units: the owner's track for
+    a true body, if linked, else the most recent track whose link to it lapsed."""
+    h = b._truth.get(true_id)
+    if h is not None:
+        return h
+    old = [k for k, t in b._former.items() if t == true_id and k in b.tracks]
+    return max(old, key=lambda k: (b.tracks[k].seen_t, k)) if old else None

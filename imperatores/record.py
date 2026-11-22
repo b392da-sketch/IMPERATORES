@@ -40,17 +40,23 @@ def state_bytes(w) -> bytes:
              e.fatigue, e.order, e.resolve, e.task, e.route, e.route_for, e.blocked_ticks]
             for e in w.entities]
     cmds = [[c.id, c.side, c.rank, c.x, c.y, c.mobility, c.commands, c.alive] for c in w.commanders]
+    # command state that can change later behaviour (Codex review 005, finding 8); order
+    # stages, audit entries and tracking links are folded into the command and belief hashes
+    # as they change
     command = [
         [[oid, o.status, len(o.stages), o.understood_handle] for oid, o in w.orders.items()],
-        [[ms.id, ms.status, ms.x, ms.y, ms.dest, ms.route, ms.search_ticks, ms.ridden_m] for ms in w.messengers],
+        [[ms.id, list(ms.key), ms.status, ms.x, ms.y, ms.dest, ms.route, ms.route_for, ms.search_ticks,
+          ms.stuck_ticks, ms.ridden_m] for ms in w.messengers],
         sorted([k, v] for k, v in w.staff.items()),
-        sorted([k, [m.id for m in v]] for k, v in w.outbox.items()),
+        sorted([k, [[m.id, list(m.key), m.kind, m.recipient, m.created_t] for m in v]] for k, v in w.outbox.items()),
         sorted([k, v] for k, v in w.pending.items()),
-        sorted([k, [bool(en.get("fired")) for en in p.on]] for k, p in w.plans.items()),
-        len(w.inputs),
+        sorted([k, list(p.home), p.on] for k, p in w.plans.items()),
+        sorted([list(k), v] for k, v in w.seq.items()),
+        sorted(w.delivered),
+        w.inputs,
     ]
-    return json.dumps([w.tick, rows, cmds, w.belief_trace, command], sort_keys=True, separators=(",", ":"),
-                      allow_nan=False, default=list).encode()
+    return json.dumps([w.tick, rows, cmds, w.belief_trace, w.command_trace, command], sort_keys=True,
+                      separators=(",", ":"), allow_nan=False, default=list).encode()
 
 
 def advance_trace(w) -> None:
@@ -83,6 +89,9 @@ def snapshot(w) -> None:
 def digest(w) -> str:
     body = json.dumps({"scenario": w.scenario_digest, "seed": w.seed, "params": w.params,
                        "final_tick": w.tick, "trace": w.trace, "belief_trace": w.belief_trace,
+                       "command_trace": w.command_trace,
+                       "orders": [o.to_record() for _, o in sorted(w.orders.items())],
+                       "audit": {k: w.audit[k] for k in sorted(w.audit)},
                        "events": w.events, "snapshots": w.snapshots},
                       sort_keys=True, separators=(",", ":"), allow_nan=False)
     return hashlib.sha256(body.encode()).hexdigest()
@@ -102,5 +111,6 @@ def to_json(w) -> dict:
                            "commands": c.commands} for c in w.commanders],
            "belief_snapshot_fields": list(BELIEF_SNAPSHOT_FIELDS),
            "orders": [o.to_record() for _, o in sorted(w.orders.items())],
+           "audit": {k: w.audit[k] for k in sorted(w.audit)},
            "events": w.events, "snapshots": w.snapshots, "digest": digest(w)}
     return _owned(out)

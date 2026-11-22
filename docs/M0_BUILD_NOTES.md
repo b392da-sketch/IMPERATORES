@@ -84,6 +84,20 @@ All eleven findings reproduced and fixed (`reviews/responses/004-step3-beliefs-a
 - **Assumptions recorded:** commanders stand still, so their own side knows where they are (until step 5); a sender knows which friendly body is his addressee and uses his own track, or the plan of battle, for where it is; orders are carried out once understood and executable (refusal within latitude comes with decisions, step 5).
 - **Test discipline:** two tests at first accepted either of two outcomes. Checking showed both took the intended branch, and both are now strict.
 
+## Step 4 revisited after Codex review 005 (22 November 2026)
+
+All eleven findings fixed (`reviews/responses/005-step4-orders-answer.md`). Model decisions made, all engineering assumptions:
+- **Authority:** commanders order those under them at any depth; officers order themselves; reports go up to a commander on the same side.
+- **Supersession:** a later order replaces one still waiting to execute; the old one fails with a link.
+- **Where a rider goes:** the sender's own most recent track of the unit, else its home in the plan. *Failed attempt:* also using the place the sender last ordered the unit to sent the rider carrying that very order to the destination instead of the unit. Dropped.
+- **Handoff:** physical (radius, open ground, recipient alive), after the tick's risks.
+- **Deadlines:** no progress for `search_time_s` ends a ride (outward: message fails; return: rider stranded). Queues end after `messenger_wait_timeout_s` (1800 s), or at once when the sender is dead or has no messengers left.
+- **Signals:** bind only from own commanders or emitters named in the plan; `cavalry_engage` only mounted troops; recall goes home (deployment position by default).
+- **Tracking:** links age out before association; recognised bodies return to their former track; merges leave redirects that tasks follow.
+- **Random keys** are separate from readable ids and from shared counters.
+
+New parameters: `messenger_retarget_m` (20 m), `messenger_wait_timeout_s` (1800 s). Both are assumptions. Perception cycle measured at about 530 ms (200 entities, 6 commanders), within run-to-run noise of before.
+
 ## Performance decision (22 November 2026)
 
 Ben accepted the current perception cost (about 450 ms per cycle at 200 entities on hill slopes) for now. It is to be decided at step 11 with the performance report from a complete battle. Options then: share sight lines between ends; change how often officers look (a model choice, Ben's); the fast mode (M3).
