@@ -37,7 +37,7 @@ A small fictional Roman–Carthaginian engagement; observer mode only. Specifica
 | 10 | Viewer, second step: belief overlays and "Why?" navigation | |
 | 11 | Default scenario, diagnostics, sensitivity and performance reports; gate G0 | |
 
-**Gate G0:** the eight acceptance checks in the specification (section 7.1). The **performance decision** is still open, and due by step 11.
+**Gate G0:** the eight acceptance checks in the specification (section 7.1). **Performance:** the current cost is accepted for now (Ben, 22 November); decided at step 11 with real figures.
 
 ---
 
@@ -177,5 +177,5 @@ A small fictional Roman–Carthaginian engagement; observer mode only. Specifica
 2. **Historical Figures and Civilizations:** to be settled when that stage comes. **Deferred.**
 3. **Naval warfare:** stays in M7; Themistocles is postponed to it. **Decided.**
 4. **First playable roster:** Alexander, Scipio Africanus, Hannibal and Caesar. **Decided.**
-5. **The performance choice** from M0: **open.**
+5. **The performance choice** from M0: accept the current cost for now and decide at step 11 with the performance report. **Decided.**
 6. **Where "release" falls:** later. **Deferred.**

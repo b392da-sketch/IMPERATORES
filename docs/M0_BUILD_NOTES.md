@@ -83,3 +83,7 @@ All eleven findings reproduced and fixed (`reviews/responses/004-step3-beliefs-a
 - **Scenario inputs** (orders, reports, signals at given times) stand in for decisions until step 5, and for the player in M1.
 - **Assumptions recorded:** commanders stand still, so their own side knows where they are (until step 5); a sender knows which friendly body is his addressee and uses his own track, or the plan of battle, for where it is; orders are carried out once understood and executable (refusal within latitude comes with decisions, step 5).
 - **Test discipline:** two tests at first accepted either of two outcomes. Checking showed both took the intended branch, and both are now strict.
+
+## Performance decision (22 November 2026)
+
+Ben accepted the current perception cost (about 450 ms per cycle at 200 entities on hill slopes) for now. It is to be decided at step 11 with the performance report from a complete battle. Options then: share sight lines between ends; change how often officers look (a model choice, Ben's); the fast mode (M3).
