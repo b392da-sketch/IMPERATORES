@@ -54,6 +54,8 @@ def state_bytes(w) -> bytes:
         sorted([list(k), v] for k, v in w.seq.items()),
         sorted(w.delivered),
         w.inputs,
+        sorted([k, v] for k, v in w.deciders.items()),
+        sorted([k, v] for k, v in w.standing.items()),
     ]
     return json.dumps([w.tick, rows, cmds, w.belief_trace, w.command_trace, command], sort_keys=True,
                       separators=(",", ":"), allow_nan=False, default=list).encode()
@@ -92,6 +94,7 @@ def digest(w) -> str:
                        "command_trace": w.command_trace,
                        "orders": [o.to_record() for _, o in sorted(w.orders.items())],
                        "audit": {k: w.audit[k] for k in sorted(w.audit)},
+                       "decisions": [w.decisions[k] for k in sorted(w.decisions)],
                        "events": w.events, "snapshots": w.snapshots},
                       sort_keys=True, separators=(",", ":"), allow_nan=False)
     return hashlib.sha256(body.encode()).hexdigest()
@@ -112,5 +115,6 @@ def to_json(w) -> dict:
            "belief_snapshot_fields": list(BELIEF_SNAPSHOT_FIELDS),
            "orders": [o.to_record() for _, o in sorted(w.orders.items())],
            "audit": {k: w.audit[k] for k in sorted(w.audit)},
+           "decisions": [w.decisions[k] for k in sorted(w.decisions)],
            "events": w.events, "snapshots": w.snapshots, "digest": digest(w)}
     return _owned(out)

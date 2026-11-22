@@ -139,6 +139,10 @@ def describe_target(w, issuer: int, spec: dict):
 
 
 def _cause(o: om.Order) -> list:
+    if o.origin == "decision":
+        return [{"decision": o.parent}]
+    if o.origin == "signal":
+        return [{"signal": o.parent}]
     return [{"order": o.parent}] if o.parent else [{"note": f"order from {o.origin}"}]
 
 
@@ -186,7 +190,7 @@ def issue(w, issuer: int, recipient: int, spec: dict, origin: str, key: tuple, o
     return o
 
 
-def send_report(w, sender: int, recipient: int, key: tuple) -> om.Message:
+def send_report(w, sender: int, recipient: int, key: tuple, cause: dict | None = None) -> om.Message:
     belief_mod_ensure(w)
     if recipient not in w.commanders_by_id or side_of(w, sender) != side_of(w, recipient) or sender == recipient:
         raise ValueError(f"{sender} cannot report to {recipient}")
@@ -196,7 +200,7 @@ def send_report(w, sender: int, recipient: int, key: tuple) -> om.Message:
                    contacts=contacts)
     om.fold(w, "report", mid, list(key), recipient, len(contacts))
     record.log(w, "report_written", sender, {"message": mid, "recipient": recipient, "contacts": len(contacts)},
-               [{"note": "report input"}])
+               [cause or {"note": "report input"}])
     if not alive(w, sender):
         record.log(w, "report_lost", sender, {"message": mid, "why": "the sender is dead"}, [{"message": mid}])
         return m
@@ -260,6 +264,7 @@ def deliver(w, m: om.Message) -> bool:
     om.fold(w, "delivered", m.id)
     if m.kind == "report":
         changed = belief_mod.apply_report(w, m.recipient, list(m.contacts), m.sender, w.tick)
+        w.reported_to.add(m.recipient)              # an interrupt for the commander (step 5)
         record.log(w, "report_delivered", m.recipient, {"message": m.id, "from": m.sender, "tracks_changed": len(changed)},
                    [{"message": m.id}])
         return True
@@ -280,6 +285,13 @@ def on_delivered(w, o: om.Order) -> None:
         relay(w, o)
         return
     eid = o.recipient
+    if o.issuer != eid:                         # step 5: an order from someone else is a decision
+        from . import decide
+        if not decide.on_order(w, eid, o):
+            did = f"d{eid}.{w.deciders[eid]['n']}"
+            om.fail(w, o, "executed", "the recipient chose otherwise", {"decision": did})
+            record.log(w, "order_declined", eid, {"order": o.id}, [{"decision": did}])
+            return
     if eid in w.pending:                      # finding 2: a later order supersedes one still waiting
         old = w.orders[w.pending.pop(eid)[0]]
         om.fail(w, old, "executed", "superseded by a later order", {"superseded_by": o.id})
@@ -321,7 +333,7 @@ def try_execute(w, eid: int) -> None:
     if e.fit <= 0:
         _failed_execution(w, eid, o, "the entity has no men left fit")
         return
-    if o.kind != "hold":
+    if o.kind not in ("hold", "face"):
         blocked = None
         if e.order < P["disordered_order"]:
             blocked = "disordered: must reform first"
@@ -352,8 +364,13 @@ def try_execute(w, eid: int) -> None:
             _failed_execution(w, eid, o, "the body is no longer in the officer's picture")
             return
     del w.pending[eid]
+    if o.origin != "decision":                  # the order he works under, from his commanders or plan
+        w.standing[eid] = oid
     if o.kind == "hold":
         e.task = {"kind": "hold", "order": oid}
+        e.route = e.route_for = None
+    elif o.kind == "face":
+        e.task = {"kind": "face", "x": float(o.toward[0]), "y": float(o.toward[1]), "order": oid}
         e.route = e.route_for = None
     elif o.kind in om.PLACE_KINDS:
         e.task = {"kind": "move_to", "x": float(o.place[0]), "y": float(o.place[1]), "order": oid}
@@ -363,13 +380,13 @@ def try_execute(w, eid: int) -> None:
         e.task = {"kind": "approach", "handle": int(handle), "standoff": float(standoff), "order": oid}
         e.route = e.route_for = None
     e.blocked_ticks = 0
-    om.transition(w, o, "executed", {"task": e.task["kind"], "note": "carried out (no decision layer until step 5)"})
+    om.transition(w, o, "executed", {"task": e.task["kind"]})
     record.log(w, "order_executed", eid, {"order": oid, "task": e.task["kind"]}, [{"order": oid}])
 
 
 # ---- signals -------------------------------------------------------------------------------------
 
-def emit_signal(w, issuer: int, meaning: str, to, key: tuple, sid: str) -> None:
+def emit_signal(w, issuer: int, meaning: str, to, key: tuple, sid: str, cause: dict | None = None) -> None:
     P = w.params
     belief_mod_ensure(w)
     if not om.valid_signal(meaning):
@@ -384,7 +401,7 @@ def emit_signal(w, issuer: int, meaning: str, to, key: tuple, sid: str) -> None:
     om.fold(w, "signal", sid, list(key), meaning, sorted(addressed))
     record.log(w, "signal_emitted", issuer, {"signal": sid, "meaning": meaning, "to": sorted(addressed),
                                              "extension": meaning in om.SIGNAL_EXTENSIONS},
-               [{"note": "signal input"}])
+               [cause or {"note": "signal input"}])
     if not c.alive:
         record.log(w, "signal_not_given", issuer, {"signal": sid}, [{"note": "the commander is dead"}])
         return

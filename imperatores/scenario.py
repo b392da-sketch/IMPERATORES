@@ -53,7 +53,7 @@ def _entity(d: dict) -> Entity:
     if task["kind"] == "move_to":
         task["x"], task["y"] = float(task["x"]), float(task["y"])
     unknown = set(d) - {"id", "side", "name", "function", "represents", "x", "y", "facing_deg", "frontage",
-                        "depth", "strength", "task", "succession", "equipment", "parents", "plan"}
+                        "depth", "strength", "task", "succession", "equipment", "parents", "plan", "profile"}
     if unknown:
         raise ValueError(f"entity {name}: unknown keys {sorted(unknown)}")
     eq = d.get("equipment", {})
@@ -68,7 +68,16 @@ def _entity(d: dict) -> Entity:
         equipment=Equipment(reach=eq.get("reach", "sword"), missiles=dict(eq.get("missiles", {})),
                             protection=eq.get("protection", "medium"), mobility=eq.get("mobility", "foot")),
         parents=[int(p) for p in d.get("parents", [])],
+        profile=_profile_of(d, f"entity {name}"),
     )
+
+
+def _profile_of(d: dict, what: str) -> str:
+    from .decisions import PROFILES
+    p = d.get("profile", "by_the_book")
+    if p not in PROFILES:
+        raise ValueError(f"{what}: unknown profile {p!r} (known: {sorted(PROFILES)})")
+    return p
 
 
 def _commander(d: dict) -> Commander:
@@ -79,7 +88,8 @@ def _commander(d: dict) -> Commander:
     if d["rank"] not in RANKS:
         raise ValueError(f"commander {name}: unknown rank {d['rank']}")
     return Commander(id=cid, side=d["side"], name=name, rank=d["rank"], x=float(d["x"]), y=float(d["y"]),
-                     mobility=d.get("mobility", "horse"), commands=[int(i) for i in d.get("commands", [])])
+                     mobility=d.get("mobility", "horse"), commands=[int(i) for i in d.get("commands", [])],
+                     profile=_profile_of(d, f"commander {name}"))
 
 
 def _order_spec(d: dict, what: str, terrain=None) -> dict:
@@ -98,6 +108,11 @@ def _order_spec(d: dict, what: str, terrain=None) -> dict:
             raise ValueError(f"{what}: {kind} needs a place [x, y]")
         if terrain is not None and not terrain.passable(float(pl[0]), float(pl[1])):
             raise ValueError(f"{what}: the place {pl} is off the field or in the stream")
+    if kind == "face":
+        allowed.add("toward")
+        tw = d.get("toward")
+        if not (isinstance(tw, list) and len(tw) == 2):
+            raise ValueError(f"{what}: face needs a point 'toward': [x, y]")
     if kind in om.TARGET_KINDS:
         allowed.add("target")
         tg = d.get("target")

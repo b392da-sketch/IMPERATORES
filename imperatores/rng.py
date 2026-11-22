@@ -19,7 +19,7 @@ KEY_SCHEMA = 1
 _U32 = 2 ** 32
 
 # Append new streams at the end; never insert or reorder (it would change every run).
-STREAMS = ["movement", "perception", "messengers", "signals"]
+STREAMS = ["movement", "perception", "messengers", "signals", "decisions"]
 
 
 def _check_part(x) -> int:

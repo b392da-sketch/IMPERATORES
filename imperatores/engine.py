@@ -2,10 +2,11 @@
 from __future__ import annotations
 
 from . import record
-from .systems import command, messengers, movement, observe, perception
+from .systems import command, decide, messengers, movement, observe, perception
 
 PHASES = [
     ("perception", perception.step),     # observers look at the field as it stands at the start of the tick
+    ("decide", decide.step),             # officers and commanders reconsider (routine, or interrupted)
     ("command", command.step),           # inputs, plans, executing orders, dispatching messengers
     ("messengers", messengers.step),     # riders move, deliver, search, return, are caught or lost
     ("movement", movement.step),

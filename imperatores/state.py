@@ -68,6 +68,7 @@ class Entity:
     route: list | None = None                    # remaining waypoints of the current move
     route_for: list | None = None                # the target [x, y] the route was planned for
     blocked_ticks: int = 0                       # consecutive ticks a step was blocked
+    profile: str = "by_the_book"                 # decision tendencies (decisions.PROFILES)
 
     @property
     def formed(self) -> bool:
@@ -93,6 +94,7 @@ class Commander:
     mobility: str = "horse"
     commands: list[int] = field(default_factory=list)   # ids of entities or commanders under him
     alive: bool = True
+    profile: str = "by_the_book"                 # decision tendencies (decisions.PROFILES)
 
 
 def commander_problems(c: Commander, terrain) -> list[str]:
@@ -154,6 +156,11 @@ class World:
     delivered: set = field(default_factory=set)      # message ids already handed over (delivery is idempotent)
     audit: dict = field(default_factory=dict)        # order id -> {"intended", "took", "misread"}: record only, never read by decisions
     command_hasher: object = field(default_factory=hashlib.sha256)  # every command-state change is folded in
+    # decisions (step 5)
+    decisions: dict = field(default_factory=dict)    # decision id -> full decision record (strict JSON)
+    deciders: dict = field(default_factory=dict)     # owner id -> schedule and interrupt memory
+    standing: dict = field(default_factory=dict)     # entity id -> the order (from others) it is working under
+    reported_to: set = field(default_factory=set)    # commanders who received a report this tick
     plans: dict = field(default_factory=dict)        # entity id -> orders.Plan (every entity has one: its home at least)
     pending: dict = field(default_factory=dict)      # entity id -> [order id, tick it began waiting]
     inputs: list = field(default_factory=list)       # scenario inputs: [tick, kind, spec], in order

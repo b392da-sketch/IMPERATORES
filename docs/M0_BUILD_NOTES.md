@@ -98,6 +98,43 @@ All eleven findings fixed (`reviews/responses/005-step4-orders-answer.md`). Mode
 
 New parameters: `messenger_retarget_m` (20 m), `messenger_wait_timeout_s` (1800 s). Both are assumptions. Perception cycle measured at about 530 ms (200 entities, 6 commanders), within run-to-run noise of before.
 
+## Step 5 — decisions (22 November 2026)
+
+**What was built.** `imperatores/decisions.py` (pure: option menus, score components, softmax choice) and `systems/decide.py` (a new phase after perception: scheduling, interrupts, building each decision-maker's context from his own picture, applying the choice, recording it). Every decision is stored in `w.decisions` with its trigger, inputs (own state, standing and received orders as he knows them, the contacts the scoring read, a commander's picture of his units), every option with its components, totals and probabilities, the choice, and links to the orders, reports and signals that followed. Records are in the command hash, the digest and the exported record.
+
+**Who decides what.**
+- Officers: continue; hold (only when he sees danger); face a threat on the flank or rear (new order kind `face`); withdraw to his home; attack one of the three most threatening bodies he believes near. A new threat is reported to his commander as a side action.
+- Officers receiving an order from someone else: obey or decline. A declined order fails "the recipient chose otherwise", linked to the decision.
+- Commanders: wait; send the nearest uncommitted reserve up beside the most threatened unit; withdraw that unit; (army) sound the recall when two or more units are threatened. A commander does not repeat what he has already done.
+
+**When.** Routine reassessment at random intervals (officers 10–30 s, wings 30–60 s, armies 60–120 s). Interrupts after each perception cycle and each delivered report: a new enemy track within the threat radius, a new one on a flank or the rear, a unit under a commander newly threatened, a report received.
+
+**Tendencies.** Generic profiles `by_the_book` (default), `cautious` and `bold`, set per entity or commander with `"profile"` in the scenario. Weights are in `decisions.PROFILES`.
+
+**Engineering assumptions** (all provisional; to be tested for sensitivity, not tuned to outcomes):
+- A contact's threat weight is its believed strength relative to the unit, times nearness within the radius, times trust (1 for his own eyes, `trust` for reports), times freshness (halving at two minutes old).
+- Flank and rear threats weigh `flank_factor` (2) and `rear_factor` (3) times a frontal one.
+- Score components and constant weights are in `decisions.py`: inertia 0.25 for continuing; the cost of giving ground; condition from fatigue, order and losses; opportunity from believed odds (capped at 3:1) times commitment; duty to an order by latitude.
+- Acting beyond an order costs `latitude_cost_<latitude>` × (1 − initiative).
+- Changing course costs `change_cost` (0.5).
+- Choice: softmax at `decision_temperature` (0.5).
+- New parameters: routine interval bounds, `threat_radius_m` (500), `commander_threat_radius_m` (600), flank and rear angles (60°, 120°), `report_min_interval_s` (60), `face_tolerance_deg` (10).
+- A commander knows which of his tracks are his own units (standards are recognised); otherwise he places them at their home in the plan.
+
+**Failed attempts and corrections.**
+- *Halting for nothing:* hold was offered with no threat in sight and won about a quarter of reassessments, so marching units stopped at random. Hold is now offered only when the officer sees danger.
+- *Dithering:* without any commitment, a threatened officer re-rolled his choice at every reassessment: face, withdraw, hold, attack, withdraw again, each within 20 s. Fixed by treating what he is already doing as "continue" and charging a cost for any change of course. The same scenario now gives face, hold, then one attack.
+- *Ids:* decision orders first took the issuer's readable order numbers, renumbering scenario orders. They now have their own ids, `d<owner>.<n>/<j>`.
+- *Facing:* with inertia at 0.5, facing a strong flank threat lost to carrying on. Inertia was lowered to 0.25 and the flank and rear factors raised.
+
+**Not yet.** These come with steps 6–7, when there is combat to respond to: extend or refuse a flank, line relief, pursue and recall. Also not yet:
+- Commanders still relay orders mechanically.
+- Signal and plan responses are carried out without a second decision.
+- Threat ignores the kind of troops (horse against foot) and their order.
+- The officer attention sector is still a radius.
+
+**Performance.** With 200 entities and 2 commanders in contact, the decide phase costs about 16–19 ms per tick, or about 90–100 s per 3-hour battle, on top of perception.
+
 ## Performance decision (22 November 2026)
 
 Ben accepted the current perception cost (about 450 ms per cycle at 200 entities on hill slopes) for now. It is to be decided at step 11 with the performance report from a complete battle. Options then: share sight lines between ends; change how often officers look (a model choice, Ben's); the fast mode (M3).

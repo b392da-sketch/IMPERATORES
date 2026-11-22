@@ -134,6 +134,20 @@ def step(w) -> None:
                 e.route = None
             target = point
             e.task["x"], e.task["y"] = point[0], point[1]
+        elif e.task.get("kind") == "face":
+            want = math.atan2(float(e.task["y"]) - e.y, float(e.task["x"]) - e.x)
+            diff = _wrap(want - e.facing)
+            if abs(diff) <= math.radians(P["face_tolerance_deg"]):
+                cause = _cause(e)
+                order_id = e.task.get("order")
+                _halt(e)
+                if order_id:
+                    e.task["order"] = order_id
+                record.log(w, "faced", e.id, {"facing": e.facing}, cause + [{"note": "turned to face the threat"}])
+                continue
+            turn = (P["turn_rate_formed"] if e.formed else P["turn_rate_open"]) * dt
+            e.facing = _wrap(e.facing + max(-turn, min(turn, diff)))
+            continue
         elif e.task.get("kind") != "move_to":
             if e.route is not None:
                 e.route = e.route_for = None

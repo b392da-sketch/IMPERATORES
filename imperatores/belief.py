@@ -311,7 +311,7 @@ def _own(w, owner: int):
     if owner in w.by_id:
         e = w.by_id[owner]
         own = {"kind": "entity", "id": e.id, "side": e.side, "function": e.function, "x": e.x, "y": e.y,
-               "facing": e.facing, "fit": e.fit, "wounded": e.wounded, "dead": e.dead, "fled": e.fled,
+               "facing": e.facing, "start_strength": e.start_strength, "fit": e.fit, "wounded": e.wounded, "dead": e.dead, "fled": e.fled,
                "captured": e.captured, "fatigue": e.fatigue, "order": e.order, "resolve": e.resolve,
                "task": e.task.get("kind", ""), "known_t": w.tick}
     else:

@@ -156,12 +156,13 @@ class Handoff(unittest.TestCase):
             w = world(es, [army()], [order(900, 1)], seed=seed,
                       overrides={"intercept_per_min": 3.0, "intercept_mounted_factor": 4.0})
             engine.step(w)
-            if w.messengers[0].status == "captured":
+            rider = next(m for m in w.messengers if m.id == "900.1")
+            if rider.status == "captured":
                 caught += 1
                 self.assertEqual(w.orders["900.1"].status, "failed")
                 self.assertNotIn("delivered", stages(w, "900.1"))
-            else:
-                self.assertEqual(w.orders["900.1"].status, "executed")
+            else:                                     # handed over (then obeyed, declined or superseded)
+                self.assertIn("delivered", stages(w, "900.1"))
         self.assertGreater(caught, 0)
 
     def test_codex_005_4_a_dead_commander_receives_nothing(self):

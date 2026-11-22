@@ -1,7 +1,7 @@
 """Orders, messages, signals and deployment plans (specification 5.5; research Q002).
 
 An **order** is an intent, not a path: hold; advance to a place; withdraw to a place; attack a
-body; support a body. It carries a **latitude** (how much discretion the recipient has) and a
+body; support a body; face towards a point (to meet a threat on a flank, step 5). It carries a **latitude** (how much discretion the recipient has) and a
 record of its life. Its status moves only along legal transitions, and every order ends in
 exactly one terminal status, executed or failed (Codex review 005, findings 2 and 6):
 
@@ -35,8 +35,9 @@ chosen so that unrelated actions never shift each other's draws:
   (relayer, 5, recipient, *parent)   an order relayed by a commander
   (entity, 6, k)                     the entity's plan entry k
   (entity, 7, *signal)               an entity's response to a signal
-Its id, for people and the record, is readable: "<issuer>.<n>" for orders an issuer decides or is
-given as input (numbered per issuer, orders only), "<parent>><recipient>" for relays,
+Its id, for people and the record, is readable: "<issuer>.<n>" for orders given as input
+(numbered per issuer, orders only), "<decision>/<j>" for an order or signal from a decision
+(step 5), e.g. "d900.3/0", "<parent>><recipient>" for relays,
 "<entity>.plan<k>" for plans, "<signal>><entity>" for responses, "<sender>.r<n>" for reports and
 "<issuer>.s<n>" for signals.
 
@@ -60,7 +61,7 @@ import json
 import math
 from dataclasses import dataclass, field
 
-ORDER_KINDS = ("hold", "advance_to", "withdraw_to", "attack", "support")
+ORDER_KINDS = ("hold", "advance_to", "withdraw_to", "attack", "support", "face")
 PLACE_KINDS = ("advance_to", "withdraw_to")
 TARGET_KINDS = ("attack", "support")
 LATITUDES = ("strict", "normal", "free")
@@ -113,6 +114,7 @@ class Order:
     latitude: str = "normal"
     place: tuple | None = None    # for advance_to / withdraw_to
     target: TargetDescription | None = None   # for attack / support
+    toward: tuple | None = None   # for face: the point to turn towards
     origin: str = "input"         # "input", "relay", "plan", "signal"; "decision" from step 5
     parent: str | None = None     # the order or signal this one comes from
     stages: list = field(default_factory=list)   # [stage, tick, detail]
@@ -122,6 +124,7 @@ class Order:
     def to_record(self) -> dict:
         return {"id": self.id, "key": list(self.key), "issuer": self.issuer, "recipient": self.recipient,
                 "kind": self.kind, "latitude": self.latitude, "place": list(self.place) if self.place else None,
+                "toward": list(self.toward) if self.toward else None,
                 "target": None if self.target is None else dict(vars(self.target)),
                 "origin": self.origin, "parent": self.parent, "status": self.status,
                 "understood_handle": self.understood_handle,
@@ -197,9 +200,14 @@ def order_from_spec(oid: str, key: tuple, issuer: int, recipient: int, spec: dic
         if "place" not in spec:
             raise ValueError(f"order {kind} needs a place")
         place = (float(spec["place"][0]), float(spec["place"][1]))
+    toward = None
+    if kind == "face":
+        if "toward" not in spec:
+            raise ValueError("order face needs a point to face toward")
+        toward = (float(spec["toward"][0]), float(spec["toward"][1]))
     target = spec.get("target")
     return Order(id=oid, key=tuple(int(k) for k in key), issuer=issuer, recipient=recipient, kind=kind,
-                 latitude=lat, place=place, target=target if isinstance(target, TargetDescription) else None,
+                 latitude=lat, place=place, toward=toward, target=target if isinstance(target, TargetDescription) else None,
                  origin=origin, parent=parent)
 
 
