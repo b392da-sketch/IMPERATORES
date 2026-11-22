@@ -39,7 +39,7 @@ def state_bytes(w) -> bytes:
     rows = [[e.id, e.x, e.y, e.facing, e.fit, e.wounded, e.dead, e.fled, e.captured,
              e.fatigue, e.order, e.resolve, e.task, e.route, e.route_for, e.blocked_ticks]
             for e in w.entities]
-    cmds = [[c.id, c.x, c.y, c.alive] for c in w.commanders]
+    cmds = [[c.id, c.side, c.rank, c.x, c.y, c.mobility, c.commands, c.alive] for c in w.commanders]
     return json.dumps([w.tick, rows, cmds, w.belief_trace], sort_keys=True, separators=(",", ":"),
                       allow_nan=False).encode()
 
@@ -48,7 +48,7 @@ def advance_trace(w) -> None:
     w.trace = hashlib.sha256(w.trace.encode() + state_bytes(w)).hexdigest()
 
 
-BELIEF_SNAPSHOT_FIELDS = ("id", "side", "kind", "x", "y", "strength", "seen_t", "source")
+BELIEF_SNAPSHOT_FIELDS = ("handle", "side", "kind", "x", "y", "strength", "seen_t", "source")
 
 
 def snapshot(w) -> None:
@@ -59,8 +59,8 @@ def snapshot(w) -> None:
         if b is None:
             continue
         beliefs[str(c.id)] = [[round(v, 1) if isinstance(v, float) else v
-                               for v in (ct[f] for f in BELIEF_SNAPSHOT_FIELDS)]
-                              for _, ct in sorted(b.contacts.items())]
+                               for v in (getattr(ct, f) for f in BELIEF_SNAPSHOT_FIELDS)]
+                              for _, ct in sorted(b.tracks.items())]
     w.snapshots.append({"t": w.tick, "entities": [
         [e.id] + [round(v, 4) if isinstance(v, float) else v for v in (getattr(e, f) for f in SNAPSHOT_FIELDS)]
         + [e.task.get("kind", "")]

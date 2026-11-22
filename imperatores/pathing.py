@@ -6,8 +6,9 @@ woods and fords; streams are impassable). A piece running exactly along a grid l
 the slower of the two cells beside it. `segment_cost` computes this exactly for a straight
 segment, and the same definition is used throughout (Codex review 003, finding 6):
 
-  * A* searches cell centres (8 neighbours). An edge between two neighbouring centres
-    costs half its length in each cell, which is exactly `segment_cost` for that edge.
+  * A* searches cell centres (8 neighbours). An edge between two neighbouring full cells
+    costs half its length in each cell, which is exactly `segment_cost` for that edge;
+    edges touching a clipped cell at the field edge use `segment_cost` itself.
     The straight-line heuristic is admissible because no pace factor exceeds 1. Stale heap
     entries are skipped.
   * The raw route is: start, the centre of the start cell, the A* centres, the centre of the
@@ -100,6 +101,12 @@ def plan(t, P, cls: str, sx: float, sy: float, gx: float, gy: float, stats: dict
             p = centres[cell] = t.centre(*cell)
         return p
 
+    part_j = nx - 1 if t.width < nx * t.cell else None
+    part_i = ny - 1 if t.height < ny * t.cell else None
+
+    def partial(cell):
+        return cell[1] == part_j or cell[0] == part_i
+
     best = {start: 0.0}
     came: dict = {}
     count = 0
@@ -125,8 +132,11 @@ def plan(t, P, cls: str, sx: float, sy: float, gx: float, gy: float, stats: dict
                 continue                                # cannot pass a corner touching impassable cells
             nb = (ni, nj)
             bx, by = ctr(nb)
-            step = math.hypot(bx - ax, by - ay)
-            cost = g + step / 2.0 / fa + step / 2.0 / fb
+            if partial(cur) or partial(nb):
+                cost = g + segment_cost(t, fgrid, ax, ay, bx, by)    # clipped edge cells: exact (finding 004/7)
+            else:
+                step = math.hypot(bx - ax, by - ay)
+                cost = g + step / 2.0 / fa + step / 2.0 / fb
             if cost < best.get(nb, math.inf):
                 best[nb] = cost
                 came[nb] = cur

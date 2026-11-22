@@ -56,6 +56,11 @@ class Random:
 # (seed, stream, key parts, draw number), computed with the SplitMix64 mixer: no state, so
 # they are independent of call order and of whatever else is drawn in the same call.
 # Schema 1; change the schema number if the construction ever changes.
+#
+# Collision risk (Codex review 004): keys are mixed into a 64-bit state, so two distinct keys
+# can in principle share a state. For n distinct keys the chance of any collision is about
+# n**2 / 2**65; for a full battle (about 10**8 keyed sightings) that is below 10**-3, and a
+# collision would only make two sightings' errors equal, not leak information.
 
 _M1 = np.uint64(0xBF58476D1CE4E5B9)
 _M2 = np.uint64(0x94D049BB133111EB)
@@ -84,12 +89,13 @@ def keyed_uniforms(seed: int, stream: str, keys: list, n_draws: int) -> np.ndarr
             h = _mix(h ^ (a.astype(np.uint64) + np.uint64(1)) * _GOLDEN)
         j = np.arange(1, n_draws + 1, dtype=np.uint64)
         out = _mix(h[..., None] ^ (j * _GOLDEN))
-    return (out >> np.uint64(11)).astype(np.float64) * (1.0 / 9007199254740992.0)
+    # (k + 0.5) / 2**53: strictly inside (0, 1), so Box-Muller never needs a floor on log(u)
+    return ((out >> np.uint64(11)).astype(np.float64) + 0.5) * (1.0 / 9007199254740992.0)
 
 
 def keyed_normals(seed: int, stream: str, keys: list, n_draws: int) -> np.ndarray:
     """Standard normal draws (Box-Muller), shape (*broadcast(keys), n_draws)."""
     u = keyed_uniforms(seed, stream, keys, 2 * n_draws)
-    u1 = np.maximum(u[..., 0::2], 1e-300)
+    u1 = u[..., 0::2]
     u2 = u[..., 1::2]
     return np.sqrt(-2.0 * np.log(u1)) * np.cos(2.0 * np.pi * u2)

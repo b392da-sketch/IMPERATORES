@@ -60,3 +60,12 @@ All eleven findings reproduced; ten fixed, one resolved by documentation and a c
 - **Routes are engine-owned**, costed in open-ground metres with one exact definition shared by search and shortening; shortcuts never cost more; shortening is linear.
 - **Movement stays on the planned leg**; stalls are detected, replanned and recorded.
 - **A cost to decide on.** Exact sight with coarse bounds costs about 360 ms per perception cycle at 200 entities on hill slopes (about 6.5 minutes per 3-hour battle), against 140 ms for the unsound sampled version. The gate's 200 runs would then take roughly a day on one core, a few hours across several. Next options: share each sight line between its two ends (about 2×); let entity officers look less often than commanders (a model choice, for Ben); reduce officers' attention range (also a model choice).
+
+## Step 3 revisited after Codex review 004 (22 November 2026)
+
+All eleven findings reproduced and fixed (`reviews/responses/004-step3-beliefs-answer.md`). Lasting consequences:
+
+- **Beliefs hold tracks with observer-local handles**, never true identities. New assumptions recorded: a body is tracked while in sight (gaps up to `track_gap_s`); after a longer gap it is the same body only if recognised close up (standards and equipment identify it), otherwise a new track that may duplicate the old until recognition merges them; reports and unidentified bodies are matched by side, kind and position.
+- **The belief boundary is enforced:** validated immutable contacts in, detached copies out, every change hashed into the replay trace.
+- **Terrain is immutable** after construction; one passability rule for points and moves; ford validity is local; a 1 mm grazing tolerance for sight.
+- **Performance now about 450 ms per perception cycle** at 200 entities on hill slopes (about 8 minutes per 3-hour battle). Still open for Ben's decision, with the options already noted.

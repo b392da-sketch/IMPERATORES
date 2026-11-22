@@ -122,8 +122,10 @@ class F3F8ExactSight(unittest.TestCase):
     def test_codex_cases(self):
         t = build(width=240, height=80, woods=[[100, 40, 120, 60]])
         self.assertFalse(sight.line_of_sight(t, P, 11, 48.95, 2, 211, 28.95, 2))     # canopy corner clip
-        t = build(width=60, height=20)
-        t.elev[0, 1] = 2.1
+        t0 = build(width=60, height=20)
+        elev = t0.elev.copy()
+        elev[0, 1] = 2.1
+        t = terrain.from_arrays(60, 20, 20, t0.ground, elev)
         self.assertFalse(sight.line_of_sight(t, P, 10, 10, 2, 55, 10, 2))            # low crest between samples
         t = build(width=400, height=400, woods=[[100, 0, 120, 400]])
         self.assertFalse(sight.line_of_sight(t, P, 90, 10, 2, 350, 10, 2))           # screen beside an open observer
@@ -191,8 +193,10 @@ class F4ExactSegmentCells(unittest.TestCase):
 
 class F5Fords(unittest.TestCase):
     def test_ford_must_join_two_banks(self):
-        with self.assertRaises(ValueError):          # stream does not cut the field, so the ford joins nothing
-            build(width=200, height=200, stream={"width": 1, "points": [[50, 50], [150, 50]]}, fords=[[100, 50, 5]])
+        with self.assertRaises(ValueError):          # a small ford in the middle of a wide river reaches no bank
+            build(width=400, height=400, stream={"width": 200, "points": [[0, 200], [400, 200]]}, fords=[[200, 200, 5]])
+        # a ford across a stream that does not cut the whole field still joins its local banks (004/11)
+        build(width=100, height=100, stream={"width": 1, "points": [[50, 25], [50, 75]]}, fords=[[50, 50, 1]])
 
     def test_effective_opening_reported(self):
         t = build(width=100, height=100, stream={"width": 1, "points": [[50, 0], [50, 100]]}, fords=[[50, 50, 1]])
@@ -256,10 +260,12 @@ class F10PlanningCost(unittest.TestCase):
         checks = {}
         for n in (9, 15, 21):
             spec = {"width": 20 * n, "height": 20 * n, "cell": 20}
-            t = build(**spec)
+            t0 = build(**spec)
+            g = t0.ground.copy()
             for r in range(1, n, 2):                         # every odd row is stream with one gap
-                t.ground[r, :] = STREAM
-                t.ground[r, (n - 1) if (r // 2) % 2 == 0 else 0] = 0
+                g[r, :] = STREAM
+                g[r, (n - 1) if (r // 2) % 2 == 0 else 0] = 0
+            t = terrain.from_arrays(20 * n, 20 * n, 20, g, t0.elev)
             st = {}
             route = pathing.plan(t, P, "formed", 10, 10, 20 * n - 10, 20 * n - 10, st)
             self.assertIsNotNone(route)

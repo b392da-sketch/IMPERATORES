@@ -15,6 +15,9 @@ from .state import FUNCTIONS, RANKS, SIDES, Commander, Entity, Equipment, Office
 from .systems import observe
 
 
+MAX_ID = 2 ** 32 - 1              # ids are random-stream keys, which are unsigned 32-bit (finding 004/9)
+
+
 def _int(d: dict, key: str, what: str) -> int:
     v = d.get(key)
     if isinstance(v, bool) or not isinstance(v, int):
@@ -22,11 +25,16 @@ def _int(d: dict, key: str, what: str) -> int:
     return v
 
 
+def _id(d: dict, what: str) -> int:
+    v = _int(d, "id", what)
+    if not (0 <= v <= MAX_ID):
+        raise ValueError(f"{what}: id must be in [0, {MAX_ID}]")
+    return v
+
+
 def _entity(d: dict) -> Entity:
     name = d.get("name", "?")
-    eid = _int(d, "id", f"entity {name}")
-    if eid < 0:
-        raise ValueError(f"entity {name}: id must not be negative")
+    eid = _id(d, f"entity {name}")
     if d["side"] not in SIDES:
         raise ValueError(f"entity {name}: unknown side {d['side']}")
     if d["function"] not in FUNCTIONS:
@@ -60,9 +68,7 @@ def _entity(d: dict) -> Entity:
 
 def _commander(d: dict) -> Commander:
     name = d.get("name", "?")
-    cid = _int(d, "id", f"commander {name}")
-    if cid < 0:
-        raise ValueError(f"commander {name}: id must not be negative")
+    cid = _id(d, f"commander {name}")
     if d["side"] not in SIDES:
         raise ValueError(f"commander {name}: unknown side {d['side']}")
     if d["rank"] not in RANKS:

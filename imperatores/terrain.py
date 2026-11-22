@@ -18,7 +18,8 @@ Scenario format ("terrain"):
   fords:  [[x, y, radius_m], ...]
           stream cells whose centre lies within the radius become ford. Passability is by
           whole cells, so the effective opening is whole cells (at least one cell wide);
-          `ford_openings` reports it. Each ford must actually join two banks, or loading fails.
+          `ford_openings` reports it. Each ford must join the banks it lies between (some ford
+          cell has passable ground on two opposite sides), or loading fails.
 
 Heights are given at cell centres; between centres the ground is bilinear, on "patches"
 whose corners are four neighbouring cell centres.
@@ -27,6 +28,14 @@ Geometry convention for segments (cells_on_segment): a cell counts as touched if
 square of the cell has any point in common with the closed segment, including touching only
 an edge or a corner. This is conservative for barriers: a move that grazes a stream cell is
 blocked. It is symmetric: a segment and its reverse touch the same cells.
+
+Terrain is immutable once built: its arrays are read-only, so caches derived from it (for
+example the coarse sight bounds) can never go stale (Codex review 004, finding 4). Tests and
+tools that need an edited map build a new one with `from_arrays`.
+
+Point rule (finding 8): a point is passable if it is on the field and no stream cell's closed
+square contains it. A point on the edge of a stream cell is therefore not passable, matching
+the segment rule, so nothing can stand where it could not move away from.
 
 Assumption (M0): both armies know the ground (pre-battle reconnaissance assumed). Unknown
 or misjudged terrain is outside M0. Beliefs about the enemy are another matter (step 3).
@@ -80,7 +89,7 @@ class Terrain:
         return float(self.height_at_many(np.array([x], dtype=float), np.array([y], dtype=float))[0])
 
     def passable(self, x: float, y: float) -> bool:
-        return self.inside(x, y) and self.ground_at(x, y) != STREAM
+        return self.inside(x, y) and all(self.ground[i, j] != STREAM for i, j in _cells_containing(self, x, y))
 
     def segment_passable(self, ax: float, ay: float, bx: float, by: float) -> bool:
         """True if the segment stays on the field and touches no stream cell (see convention above)."""
@@ -229,6 +238,32 @@ def _components(passable: np.ndarray) -> np.ndarray:
     return lab
 
 
+def from_arrays(width: float, height: float, cell: float, ground, elev) -> Terrain:
+    """A read-only terrain from explicit arrays (copied)."""
+    g = np.array(ground, dtype=np.int8, copy=True)
+    e = np.array(elev, dtype=float, copy=True)
+    ny, nx = int(math.ceil(height / cell)), int(math.ceil(width / cell))
+    if g.shape != (ny, nx) or e.shape != (ny, nx):
+        raise ValueError(f"terrain arrays must have shape {(ny, nx)}")
+    if not np.isfinite(e).all():
+        raise ValueError("terrain heights must be finite")
+    g.flags.writeable = False
+    e.flags.writeable = False
+    return Terrain(width=float(width), height=float(height), cell=float(cell), ground=g, elev=e)
+
+
+def _crosses_locally(closed: np.ndarray, ford: np.ndarray) -> bool:
+    """True if some ford cell has passable ground on two opposite sides (left and right, or
+    above and below): the ford then joins the banks it lies between (Codex review 004, finding 11)."""
+    ny, nx = closed.shape
+    for i, j in zip(*np.nonzero(ford)):
+        for (a1, b1), (a2, b2) in (((i, j - 1), (i, j + 1)), ((i - 1, j), (i + 1, j))):
+            if (0 <= a1 < ny and 0 <= b1 < nx and 0 <= a2 < ny and 0 <= b2 < nx
+                    and closed[a1, b1] and closed[a2, b2]):
+                return True
+    return False
+
+
 def build(spec: dict) -> Terrain:
     if "cell" not in spec:
         raise ValueError("terrain: 'cell' (metres per grid cell) must be given")
@@ -272,22 +307,16 @@ def build(spec: dict) -> Terrain:
                 stream[i, j] = True
         ground[stream] = STREAM
         closed = ground != STREAM                          # passable cells with every ford closed
-        base = _components(closed)
         for fx, fy, fr in spec.get("fords", []):
             ford = stream & (np.hypot(cx - fx, cy - fy) <= float(fr))
             if not ford.any():
                 raise ValueError(f"terrain: ford at ({fx}, {fy}) does not touch the stream")
-            with_ford = _components(closed | ford)
-            fi, fj = map(int, np.argwhere(ford)[0])
-            group = with_ford[fi, fj]
-            # the ford must join at least two areas that are separate without it
-            joined = set(base[closed & (with_ford == group)].tolist())
-            if len(joined) < 2:
+            if not _crosses_locally(closed, ford):
                 raise ValueError(f"terrain: ford at ({fx}, {fy}) does not join two banks")
             ground[ford] = FORD
     elif spec.get("fords"):
         raise ValueError("terrain: fords given without a stream")
-    return t
+    return from_arrays(w, h, cell, ground, elev)
 
 
 def ford_openings(t: Terrain) -> list[dict]:

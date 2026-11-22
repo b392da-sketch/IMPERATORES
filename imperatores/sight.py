@@ -15,6 +15,11 @@ Woods (finding 8): the canopy of a wood blocks the view, except for the cells of
 the observer (or target) is standing in, contiguous with him: from inside a wood one sees
 out through the trees nearby. If neither end is in a wood, every wood in between blocks.
 
+Grazing (Codex review 004, finding 10): a sight line that meets ground or canopy over a piece
+shorter than GRAZE_M (1 mm) is treated as grazing and not blocked; any longer piece is
+checked. A line running exactly along a cell edge takes the ground of the cell on the
+higher-index side (the floor convention of the grid).
+
 Pair independence: each pair's answer depends only on that pair (its own breakpoints),
 never on which other pairs are checked in the same call.
 
@@ -27,6 +32,7 @@ import numpy as np
 
 from .terrain import WOODS
 
+GRAZE_M = 1e-3                   # a sight line touching ground or canopy over less than 1 mm is not blocked
 _CHUNK_POINTS = 300_000          # cap on (pairs x breakpoints) per chunk, to bound memory
 BLOCK_CELLS = 4                  # coarse blocks for the quick certainly-visible / certainly-blocked checks
 
@@ -116,7 +122,8 @@ def _chunk(t, P, ox, oy, z0, tx, ty, z1, wood_o, wood_t):
                          np.ones((n, 1))], axis=1)
     ts.sort(axis=1)
     s0, s1 = ts[:, :-1], ts[:, 1:]
-    valid = (s1 - s0) > 1e-12
+    L = np.hypot(tx - ox, ty - oy)[:, None]
+    valid = (s1 - s0) * L > GRAZE_M                     # pieces shorter than the grazing tolerance do not block
     sm = (s0 + s1) / 2.0
     dx, dy = (tx - ox)[:, None], (ty - oy)[:, None]
     x0, y0 = ox[:, None], oy[:, None]

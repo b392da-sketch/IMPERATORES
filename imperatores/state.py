@@ -8,6 +8,7 @@ random draws unchanged (Codex review 002, finding 1).
 from __future__ import annotations
 
 import math
+import hashlib
 from dataclasses import dataclass, field
 
 import numpy as np
@@ -142,7 +143,7 @@ class World:
     trace: str = ""                              # rolling hash of the full-precision state after every tick
     commanders: list = field(default_factory=list)
     beliefs: dict = field(default_factory=dict)  # owner id -> belief.Belief
-    belief_trace: str = ""                       # rolling hash of every belief change
+    belief_hasher: object = field(default_factory=hashlib.sha256)   # every belief change is folded in
     by_id: dict[int, Entity] = field(default_factory=dict)
     commanders_by_id: dict = field(default_factory=dict)
     roster: tuple = ()                           # ids at the start; roster changes must be explicit
@@ -156,6 +157,10 @@ class World:
         w.roster = tuple(e.id for e in entities)
         w.commanders_by_id = {c.id: c for c in w.commanders}
         return w
+
+    @property
+    def belief_trace(self) -> str:
+        return self.belief_hasher.hexdigest()
 
     @property
     def time(self) -> float:
