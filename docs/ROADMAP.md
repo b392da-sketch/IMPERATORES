@@ -1,6 +1,6 @@
 # IMPERATORES roadmap — DRAFT for Ben's approval
 
-**Status:** draft, 22 November 2026. Each milestone gets its own specification (approved by Ben, reviewed by ChatGPT) and its own behavioural gate before the next begins, as M0 does. The order and contents below are proposals unless marked **decided**. Open questions are collected at the end.
+**Status:** draft, 22 November 2026; Ben's answers to the open questions recorded the same day (end of document). Each milestone gets its own specification (approved by Ben, reviewed by ChatGPT) and its own behavioural gate before the next begins, as M0 does. The order and contents below are proposals unless marked **decided**. Open questions are collected at the end.
 
 ## The whole, in one paragraph
 
@@ -37,7 +37,7 @@ A small fictional Roman–Carthaginian engagement; observer mode only. Specifica
 | 10 | Viewer, second step: belief overlays and "Why?" navigation | |
 | 11 | Default scenario, diagnostics, sensitivity and performance reports; gate G0 | |
 
-**Gate G0:** the eight acceptance checks in the specification (section 7.1). **Performance decision** (pending) is due at step 11.
+**Gate G0:** the eight acceptance checks in the specification (section 7.1). The **performance decision** is still open, and due by step 11.
 
 ---
 
@@ -126,7 +126,7 @@ A small fictional Roman–Carthaginian engagement; observer mode only. Specifica
 
 **Goal:** the rest of the seventeen-leader roster and their worlds. **(Decided: the roster of 17 is for research; which are playable at release is open.)**
 
-- **Leaders:** Pompey, Hamilcar Barca, Scipio Aemilianus, Fabius Maximus, Themistocles, Philip II, Cyrus the Great, Pyrrhus, Trajan, Aurelian, Sulla, Marius and Thutmose III.
+- **Leaders:** Pompey, Hamilcar Barca, Scipio Aemilianus, Fabius Maximus, Philip II, Cyrus the Great, Pyrrhus, Trajan, Aurelian, Sulla, Marius and Thutmose III. Themistocles waits for war at sea (M7). **(Decided.)**
 - **Military systems still to come:**
   - Classical Greek hoplites;
   - Achaemenid Persian armies;
@@ -142,7 +142,7 @@ A small fictional Roman–Carthaginian engagement; observer mode only. Specifica
 
 ## M7 — War at sea and sieges
 
-- **Naval warfare:** triremes and quinqueremes, ramming and boarding, fleets and coastal operations (Themistocles, Salamis, the naval stages of the Punic Wars). **(Open: in scope eventually; timing yours.)**
+- **Naval warfare:** triremes and quinqueremes, ramming and boarding, fleets and coastal operations (the naval stages of the Punic Wars). **Themistocles and Salamis come here (decided).**
 - **Sieges:** works, assaults, blockades, relief armies (Alesia, Dyrrachium).
 
 ---
@@ -171,11 +171,11 @@ A small fictional Roman–Carthaginian engagement; observer mode only. Specifica
 - **Performance:** measured at every gate; the fast mode (M3) serves campaigns and matchups.
 - **Validation:** sensitivity reports decide where research goes next.
 
-## Open questions for Ben
+## Ben's answers (22 November 2026)
 
-1. **Order of M3 to M5:** matchups (M3) before campaigns (M4) and politics (M5), as proposed? Or campaigns first? Matchups come first here because they need only battles and leaders, and they build the fast mode that campaigns will need.
-2. **Historical Figures and Civilizations:** what each means in practice. Needed before M5, ideally sketched during M4.
-3. **Naval warfare:** M7 as proposed, or earlier (for example with Themistocles in M6)?
-4. **Playable roster at first release:** which of the seventeen.
-5. **The performance choice** from M0 (accept for now, share sight lines, or change how often officers look).
-6. **Where "release" falls:** after M2 (four leaders, battles only), after M4 (with campaigns), or later.
+1. **Order of M3 to M5:** as proposed: matchups, then campaigns, then politics. **Decided.**
+2. **Historical Figures and Civilizations:** to be settled when that stage comes. **Deferred.**
+3. **Naval warfare:** stays in M7; Themistocles is postponed to it. **Decided.**
+4. **First playable roster:** Alexander, Scipio Africanus, Hannibal and Caesar. **Decided.**
+5. **The performance choice** from M0: **open.**
+6. **Where "release" falls:** later. **Deferred.**
