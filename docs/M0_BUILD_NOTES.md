@@ -69,3 +69,17 @@ All eleven findings reproduced and fixed (`reviews/responses/004-step3-beliefs-a
 - **The belief boundary is enforced:** validated immutable contacts in, detached copies out, every change hashed into the replay trace.
 - **Terrain is immutable** after construction; one passability rule for points and moves; ford validity is local; a 1 mm grazing tolerance for sight.
 - **Performance now about 450 ms per perception cycle** at 200 entities on hill slopes (about 8 minutes per 3-hour battle). Still open for Ben's decision, with the options already noted.
+
+## Step 4 — orders, messengers, signals (22 November 2026)
+
+- **Orders are intents with a staged life** (`orders.py`): decided, sent (or waiting for a messenger), delivered (or caught, lost, or the recipient not found), understood (or the target not identified), executed (or not executable: disordered, exhausted, no route, after a wait that can lapse). Each stage is recorded with its time and reason; events link to the order.
+- **Targets are described from the issuer's picture** (side, kind, believed position) and matched by the recipient against his own. Misreading therefore arises from differing pictures, not from a random roll. Which body the issuer meant, and which the recipient took, are kept in the order's record for "Why?" only.
+- **Messengers ride the field:** limited staffs (army 6, wing 3, entity 1 runner); routed round streams; they head for where the sender believes the recipient is, ride to him once they can see him, search and then give up if he is not there; caught by enemy troops in reach who can see them, or lost by accident; then they ride back.
+- **Signals (Q002):** recall, cavalry engage, and prearranged action cues; "advance" only as a flagged extension. A signal is heard within range, halved where ground blocks the line. What a unit does on hearing it comes from its plan (recall defaults to its home position). Misattribution by unaddressed units is possible but set to zero by default, since no case is verified for the period.
+- **Deployment plans:** a home position and conditional instructions (on a signal, on an enemy believed near a place, after a time). Conditions use only the officer's own picture.
+- **Reports** carry the sender's contacts as immutable values captured at sending, merged into the recipient's picture on delivery.
+- **Relay:** a commander who receives an order passes it to everyone directly under him; the target description is passed on as received.
+- **Attack and support** move towards the officer's believed position of the body, never its true one, replanning when the belief moves.
+- **Scenario inputs** (orders, reports, signals at given times) stand in for decisions until step 5, and for the player in M1.
+- **Assumptions recorded:** commanders stand still, so their own side knows where they are (until step 5); a sender knows which friendly body is his addressee and uses his own track, or the plan of battle, for where it is; orders are carried out once understood and executable (refusal within latitude comes with decisions, step 5).
+- **Test discipline:** two tests at first accepted either of two outcomes. Checking showed both took the intended branch, and both are now strict.

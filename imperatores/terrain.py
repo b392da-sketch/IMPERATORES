@@ -18,8 +18,8 @@ Scenario format ("terrain"):
   fords:  [[x, y, radius_m], ...]
           stream cells whose centre lies within the radius become ford. Passability is by
           whole cells, so the effective opening is whole cells (at least one cell wide);
-          `ford_openings` reports it. Each ford must join the banks it lies between (some ford
-          cell has passable ground on two opposite sides), or loading fails.
+          `ford_openings` reports it. Each ford must join the banks it lies between (open ground
+          beside two opposite outer edges of the ford), or loading fails.
 
 Heights are given at cell centres; between centres the ground is bilinear, on "patches"
 whose corners are four neighbouring cell centres.
@@ -253,14 +253,19 @@ def from_arrays(width: float, height: float, cell: float, ground, elev) -> Terra
 
 
 def _crosses_locally(closed: np.ndarray, ford: np.ndarray) -> bool:
-    """True if some ford cell has passable ground on two opposite sides (left and right, or
-    above and below): the ford then joins the banks it lies between (Codex review 004, finding 11)."""
+    """True if the ford, taken as a whole, has passable ground on two opposite sides: along some
+    row, open ground just left of its leftmost cell and just right of its rightmost; or along
+    some column, above and below. The ford then joins the banks it lies between, however many
+    cells wide the stream is (Codex review 004, finding 11)."""
     ny, nx = closed.shape
-    for i, j in zip(*np.nonzero(ford)):
-        for (a1, b1), (a2, b2) in (((i, j - 1), (i, j + 1)), ((i - 1, j), (i + 1, j))):
-            if (0 <= a1 < ny and 0 <= b1 < nx and 0 <= a2 < ny and 0 <= b2 < nx
-                    and closed[a1, b1] and closed[a2, b2]):
-                return True
+    for i in sorted(set(np.nonzero(ford)[0])):
+        js = np.nonzero(ford[i])[0]
+        if 0 < js.min() and js.max() < nx - 1 and closed[i, js.min() - 1] and closed[i, js.max() + 1]:
+            return True
+    for j in sorted(set(np.nonzero(ford)[1])):
+        is_ = np.nonzero(ford[:, j])[0]
+        if 0 < is_.min() and is_.max() < ny - 1 and closed[is_.min() - 1, j] and closed[is_.max() + 1, j]:
+            return True
     return False
 
 

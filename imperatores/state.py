@@ -144,6 +144,15 @@ class World:
     commanders: list = field(default_factory=list)
     beliefs: dict = field(default_factory=dict)  # owner id -> belief.Belief
     belief_hasher: object = field(default_factory=hashlib.sha256)   # every belief change is folded in
+    # command (step 4)
+    orders: dict = field(default_factory=dict)       # order id -> orders.Order
+    outbox: dict = field(default_factory=dict)       # sender id -> [orders.Message] waiting for a messenger
+    messengers: list = field(default_factory=list)   # orders.Messenger, in dispatch order
+    staff: dict = field(default_factory=dict)        # sender id -> messengers at hand
+    seq: dict = field(default_factory=dict)          # sender id -> next message number
+    plans: dict = field(default_factory=dict)        # entity id -> orders.Plan
+    pending: dict = field(default_factory=dict)      # entity id -> [order id, tick it began waiting]
+    inputs: list = field(default_factory=list)       # scenario inputs: [tick, kind, spec], in order
     by_id: dict[int, Entity] = field(default_factory=dict)
     commanders_by_id: dict = field(default_factory=dict)
     roster: tuple = ()                           # ids at the start; roster changes must be explicit

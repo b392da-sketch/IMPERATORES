@@ -40,8 +40,17 @@ def state_bytes(w) -> bytes:
              e.fatigue, e.order, e.resolve, e.task, e.route, e.route_for, e.blocked_ticks]
             for e in w.entities]
     cmds = [[c.id, c.side, c.rank, c.x, c.y, c.mobility, c.commands, c.alive] for c in w.commanders]
-    return json.dumps([w.tick, rows, cmds, w.belief_trace], sort_keys=True, separators=(",", ":"),
-                      allow_nan=False).encode()
+    command = [
+        [[oid, o.status, len(o.stages), o.understood_handle] for oid, o in w.orders.items()],
+        [[ms.id, ms.status, ms.x, ms.y, ms.dest, ms.route, ms.search_ticks, ms.ridden_m] for ms in w.messengers],
+        sorted([k, v] for k, v in w.staff.items()),
+        sorted([k, [m.id for m in v]] for k, v in w.outbox.items()),
+        sorted([k, v] for k, v in w.pending.items()),
+        sorted([k, [bool(en.get("fired")) for en in p.on]] for k, p in w.plans.items()),
+        len(w.inputs),
+    ]
+    return json.dumps([w.tick, rows, cmds, w.belief_trace, command], sort_keys=True, separators=(",", ":"),
+                      allow_nan=False, default=list).encode()
 
 
 def advance_trace(w) -> None:
@@ -66,6 +75,8 @@ def snapshot(w) -> None:
         + [e.task.get("kind", "")]
         for e in w.entities],
         "commanders": [[c.id, round(c.x, 2), round(c.y, 2), c.alive] for c in w.commanders],
+        "messengers": [[ms.id, ms.status, round(ms.x, 1), round(ms.y, 1), ms.message.kind]
+                       for ms in w.messengers if ms.status in ("riding", "searching", "returning")],
         "beliefs": _owned(beliefs)})
 
 
@@ -90,5 +101,6 @@ def to_json(w) -> dict:
            "commanders": [{"id": c.id, "side": c.side, "name": c.name, "rank": c.rank,
                            "commands": c.commands} for c in w.commanders],
            "belief_snapshot_fields": list(BELIEF_SNAPSHOT_FIELDS),
+           "orders": [o.to_record() for _, o in sorted(w.orders.items())],
            "events": w.events, "snapshots": w.snapshots, "digest": digest(w)}
     return _owned(out)

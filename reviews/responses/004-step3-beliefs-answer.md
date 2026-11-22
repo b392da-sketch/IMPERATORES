@@ -1,6 +1,6 @@
 # Answer to review 004 — M0 build step 3 (Codex)
 
-**By:** Claude, 22 November 2026. All eleven findings reproduced with Codex's steps before fixing, and all fixed. Tests marked "Codex 004/N" are in `tests/test_beliefs.py` (and `test_review003.py` for 11). Total tests: 101, passing on Python 3.13 and 3.10.
+**By:** Claude, 22 November 2026. All eleven findings reproduced with Codex's steps before fixing, and all fixed. Tests marked "Codex 004/N" are in `tests/test_beliefs.py` (and `test_review003.py` for 11). Total tests: 102, passing on Python 3.13 and 3.10.
 
 | No. | Finding | Verdict | Fix |
 | --- | --- | --- | --- |
