@@ -1,0 +1,28 @@
+{
+  "name": "test_beliefs",
+  "note": "Step 3 test only: a hill hides one side's reserve from the other. Not a historical field or order of battle.",
+  "terrain": {
+    "width": 4000, "height": 3000, "cell": 20,
+    "hills": [[2000, 1500, 50, 900]],
+    "woods": [[600, 2300, 1000, 2700]]
+  },
+  "commanders": [
+    {"id": 900, "side": "A", "name": "Army commander A", "rank": "army", "x": 400, "y": 1500, "commands": [910]},
+    {"id": 910, "side": "A", "name": "Left wing commander A", "rank": "wing", "x": 500, "y": 900, "commands": [1, 2]},
+    {"id": 950, "side": "B", "name": "Army commander B", "rank": "army", "x": 3600, "y": 1500, "commands": [51, 52]}
+  ],
+  "entities": [
+    {"id": 1, "side": "A", "name": "Maniple", "function": "heavy_infantry", "represents": ["test maniple"],
+     "x": 700, "y": 1500, "facing_deg": 0, "frontage": 40, "depth": 18, "strength": 120,
+     "equipment": {"reach": "sword", "mobility": "foot"}},
+    {"id": 2, "side": "A", "name": "Turma", "function": "heavy_cavalry", "represents": ["test turma"],
+     "x": 700, "y": 700, "facing_deg": 0, "frontage": 30, "depth": 10, "strength": 30,
+     "equipment": {"reach": "spear", "mobility": "horse"}},
+    {"id": 51, "side": "B", "name": "Hidden reserve", "function": "heavy_infantry", "represents": ["placeholder"],
+     "x": 2900, "y": 1500, "facing_deg": 180, "frontage": 60, "depth": 15, "strength": 300,
+     "equipment": {"reach": "spear", "mobility": "foot"}},
+    {"id": 52, "side": "B", "name": "Horse in the open", "function": "light_cavalry", "represents": ["placeholder"],
+     "x": 1500, "y": 250, "facing_deg": 180, "frontage": 60, "depth": 15, "strength": 100,
+     "equipment": {"reach": "missile", "mobility": "horse"}}
+  ]
+}

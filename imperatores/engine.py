@@ -2,9 +2,10 @@
 from __future__ import annotations
 
 from . import record
-from .systems import movement, observe
+from .systems import movement, observe, perception
 
 PHASES = [
+    ("perception", perception.step),     # observers look at the field as it stands at the start of the tick
     ("movement", movement.step),
 ]
 

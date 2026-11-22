@@ -67,6 +67,31 @@ class Terrain:
         bot = e[i1, j0] * (1 - tx) + e[i1, j1] * tx
         return float(top * (1 - ty) + bot * ty)
 
+    def cells_of_many(self, xs: np.ndarray, ys: np.ndarray):
+        ny, nx = self.shape
+        i = np.clip((ys // self.cell).astype(int), 0, ny - 1)
+        j = np.clip((xs // self.cell).astype(int), 0, nx - 1)
+        return i, j
+
+    def ground_at_many(self, xs: np.ndarray, ys: np.ndarray) -> np.ndarray:
+        i, j = self.cells_of_many(xs, ys)
+        return self.ground[i, j]
+
+    def height_at_many(self, xs: np.ndarray, ys: np.ndarray) -> np.ndarray:
+        """Vectorised bilinear interpolation; identical to height_at for each point."""
+        ny, nx = self.shape
+        fx = np.clip(xs / self.cell - 0.5, 0.0, nx - 1.0)
+        fy = np.clip(ys / self.cell - 0.5, 0.0, ny - 1.0)
+        j0 = np.floor(fx).astype(int)
+        i0 = np.floor(fy).astype(int)
+        j1 = np.minimum(j0 + 1, nx - 1)
+        i1 = np.minimum(i0 + 1, ny - 1)
+        tx, ty = fx - j0, fy - i0
+        e = self.elev
+        top = e[i0, j0] * (1 - tx) + e[i0, j1] * tx
+        bot = e[i1, j0] * (1 - tx) + e[i1, j1] * tx
+        return top * (1 - ty) + bot * ty
+
     def passable(self, x: float, y: float) -> bool:
         return self.inside(x, y) and self.ground_at(x, y) != STREAM
 

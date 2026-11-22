@@ -69,6 +69,36 @@ class Entity:
         return self.function not in OPEN_ORDER
 
 
+RANKS = ("army", "wing")
+
+
+@dataclass
+class Commander:
+    """An army or wing commander: a person with his staff, at a place on the field.
+
+    An entity's own officers are part of the entity (its succession); commanders are separate.
+    Ids share one space with entity ids. Commanders do not move until step 4/5.
+    """
+    id: int
+    side: str
+    name: str
+    rank: str                                    # "army" or "wing"
+    x: float
+    y: float
+    mobility: str = "horse"
+    commands: list[int] = field(default_factory=list)   # ids of entities or commanders under him
+    alive: bool = True
+
+
+def commander_problems(c: Commander, terrain) -> list[str]:
+    out = []
+    if not (math.isfinite(c.x) and math.isfinite(c.y) and terrain.inside(c.x, c.y)):
+        out.append(f"position ({c.x}, {c.y}) is off the field")
+    elif not terrain.passable(c.x, c.y):
+        out.append("position is in the stream away from a ford")
+    return out
+
+
 def invariant_problems(e: Entity, terrain) -> list[str]:
     """Everything wrong with one entity's state; empty if it is consistent."""
     out = []
@@ -106,16 +136,21 @@ class World:
     snapshots: list[dict] = field(default_factory=list)
     scenario_digest: str = ""
     trace: str = ""                              # rolling hash of the full-precision state after every tick
+    commanders: list = field(default_factory=list)
+    beliefs: dict = field(default_factory=dict)  # owner id -> belief.Belief
+    belief_trace: str = ""                       # rolling hash of every belief change
     by_id: dict[int, Entity] = field(default_factory=dict)
+    commanders_by_id: dict = field(default_factory=dict)
     roster: tuple = ()                           # ids at the start; roster changes must be explicit
 
     @staticmethod
-    def new(scenario_name, seed, terrain, entities, overrides=None, scenario_digest=""):
+    def new(scenario_name, seed, terrain, entities, overrides=None, scenario_digest="", commanders=()):
         w = World(scenario_name=scenario_name, seed=seed, terrain=terrain, entities=entities,
                   params=params_mod.resolve(overrides), rng=Random(seed),
-                  scenario_digest=scenario_digest)
+                  scenario_digest=scenario_digest, commanders=list(commanders))
         w.by_id = {e.id: e for e in entities}
         w.roster = tuple(e.id for e in entities)
+        w.commanders_by_id = {c.id: c for c in w.commanders}
         return w
 
     @property
@@ -124,3 +159,6 @@ class World:
 
     def entity(self, eid: int) -> Entity:
         return self.by_id[eid]
+
+    def commander(self, cid: int) -> Commander:
+        return self.commanders_by_id[cid]

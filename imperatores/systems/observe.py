@@ -19,7 +19,7 @@ from __future__ import annotations
 
 import math
 
-from ..state import invariant_problems
+from ..state import commander_problems, invariant_problems
 
 
 class ConsistencyError(AssertionError):
@@ -33,6 +33,10 @@ def check_all(w, when: str) -> None:
         problems = invariant_problems(e, w.terrain)
         if problems:
             raise ConsistencyError(f"tick {w.tick} ({when}): {e.name} (id {e.id}): " + "; ".join(problems))
+    for c in w.commanders:
+        problems = commander_problems(c, w.terrain)
+        if problems:
+            raise ConsistencyError(f"tick {w.tick} ({when}): commander {c.name} (id {c.id}): " + "; ".join(problems))
 
 
 def begin_tick(w) -> None:

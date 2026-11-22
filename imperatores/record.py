@@ -38,23 +38,39 @@ def state_bytes(w) -> bytes:
     """Full-precision state of every entity (floats as shortest round-trip repr)."""
     rows = [[e.id, e.x, e.y, e.facing, e.fit, e.wounded, e.dead, e.fled, e.captured,
              e.fatigue, e.order, e.resolve, e.task] for e in w.entities]
-    return json.dumps([w.tick, rows], sort_keys=True, separators=(",", ":"), allow_nan=False).encode()
+    cmds = [[c.id, c.x, c.y, c.alive] for c in w.commanders]
+    return json.dumps([w.tick, rows, cmds, w.belief_trace], sort_keys=True, separators=(",", ":"),
+                      allow_nan=False).encode()
 
 
 def advance_trace(w) -> None:
     w.trace = hashlib.sha256(w.trace.encode() + state_bytes(w)).hexdigest()
 
 
+BELIEF_SNAPSHOT_FIELDS = ("id", "side", "kind", "x", "y", "strength", "seen_t", "source")
+
+
 def snapshot(w) -> None:
+    """Viewer snapshot: entities (rounded) and the belief pictures of commanders."""
+    beliefs = {}
+    for c in w.commanders:
+        b = w.beliefs.get(c.id)
+        if b is None:
+            continue
+        beliefs[str(c.id)] = [[round(v, 1) if isinstance(v, float) else v
+                               for v in (ct[f] for f in BELIEF_SNAPSHOT_FIELDS)]
+                              for _, ct in sorted(b.contacts.items())]
     w.snapshots.append({"t": w.tick, "entities": [
         [e.id] + [round(v, 4) if isinstance(v, float) else v for v in (getattr(e, f) for f in SNAPSHOT_FIELDS)]
         + [e.task.get("kind", "")]
-        for e in w.entities]})
+        for e in w.entities],
+        "commanders": [[c.id, round(c.x, 2), round(c.y, 2), c.alive] for c in w.commanders],
+        "beliefs": _owned(beliefs)})
 
 
 def digest(w) -> str:
     body = json.dumps({"scenario": w.scenario_digest, "seed": w.seed, "params": w.params,
-                       "final_tick": w.tick, "trace": w.trace,
+                       "final_tick": w.tick, "trace": w.trace, "belief_trace": w.belief_trace,
                        "events": w.events, "snapshots": w.snapshots},
                       sort_keys=True, separators=(",", ":"), allow_nan=False)
     return hashlib.sha256(body.encode()).hexdigest()
@@ -70,5 +86,8 @@ def to_json(w) -> dict:
            "entities": [{"id": e.id, "side": e.side, "name": e.name, "function": e.function,
                          "represents": e.represents, "parents": e.parents, "frontage": e.frontage,
                          "depth": e.depth, "start_strength": e.start_strength} for e in w.entities],
+           "commanders": [{"id": c.id, "side": c.side, "name": c.name, "rank": c.rank,
+                           "commands": c.commands} for c in w.commanders],
+           "belief_snapshot_fields": list(BELIEF_SNAPSHOT_FIELDS),
            "events": w.events, "snapshots": w.snapshots, "digest": digest(w)}
     return _owned(out)

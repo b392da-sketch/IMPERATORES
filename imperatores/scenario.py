@@ -11,7 +11,7 @@ import math
 from pathlib import Path
 
 from . import terrain as terrain_mod
-from .state import FUNCTIONS, SIDES, Entity, Equipment, Officer, World
+from .state import FUNCTIONS, RANKS, SIDES, Commander, Entity, Equipment, Officer, World
 from .systems import observe
 
 
@@ -49,15 +49,37 @@ def _entity(d: dict) -> Entity:
     )
 
 
+def _commander(d: dict) -> Commander:
+    name = d.get("name", "?")
+    cid = _int(d, "id", f"commander {name}")
+    if cid < 0:
+        raise ValueError(f"commander {name}: id must not be negative")
+    if d["side"] not in SIDES:
+        raise ValueError(f"commander {name}: unknown side {d['side']}")
+    if d["rank"] not in RANKS:
+        raise ValueError(f"commander {name}: unknown rank {d['rank']}")
+    return Commander(id=cid, side=d["side"], name=name, rank=d["rank"], x=float(d["x"]), y=float(d["y"]),
+                     mobility=d.get("mobility", "horse"), commands=[int(i) for i in d.get("commands", [])])
+
+
 def load(path: str | Path, seed: int, overrides: dict | None = None) -> World:
     raw = Path(path).read_bytes()
     spec = json.loads(raw)
     terrain = terrain_mod.build(spec["terrain"])
     entities = [_entity(d) for d in spec["entities"]]
-    ids = [e.id for e in entities]
+    commanders = [_commander(d) for d in spec.get("commanders", [])]
+    ids = [e.id for e in entities] + [c.id for c in commanders]
     if len(set(ids)) != len(ids):
-        raise ValueError("entity ids must be unique")
-    known = set(ids)
+        raise ValueError("ids must be unique across entities and commanders")
+    known = {e.id for e in entities}
+    everyone = set(ids)
+    sides = {e.id: e.side for e in entities} | {c.id: c.side for c in commanders}
+    for c in commanders:
+        for i in c.commands:
+            if i not in everyone or i == c.id:
+                raise ValueError(f"commander {c.name}: commands unknown id {i}")
+            if sides[i] != c.side:
+                raise ValueError(f"commander {c.name}: commands id {i} on the other side")
     for e in entities:
         for p in e.parents:
             if p not in known:
@@ -67,7 +89,8 @@ def load(path: str | Path, seed: int, overrides: dict | None = None) -> World:
         if e.task.get("kind") == "move_to" and not terrain.passable(float(e.task["x"]), float(e.task["y"])):
             raise ValueError(f"entity {e.name}: movement target is off the field or in the stream")
     w = World.new(spec.get("name", Path(path).stem), seed, terrain, entities,
-                  overrides=overrides, scenario_digest=hashlib.sha256(raw).hexdigest())
+                  overrides=overrides, scenario_digest=hashlib.sha256(raw).hexdigest(),
+                  commanders=commanders)
     try:
         observe.check_all(w, "at load")
     except observe.ConsistencyError as err:       # an inconsistent file is a bad input, not a simulation fault

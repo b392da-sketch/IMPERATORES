@@ -69,6 +69,8 @@ PARAMS: dict[str, Param] = {
                            "physical upper limit (a galloping horse): movement is capped at it, and the consistency check enforces it independently", "m/s"),
 
     # sight (step 2)
+    "sight_sample_spacing_cells": Param(1.0, 0.25, 1.0, ASSUMPTION,
+                                        "numerical resolution: sight lines are checked every this many terrain cells (the terrain itself is no finer than one cell)", "cells"),
     "sight_range_max": Param(3000.0, 1000.0, 6000.0, ASSUMPTION, "furthest distance at which a formed body can be seen at all in clear weather", "m"),
     "sight_range_in_woods": Param(60.0, 20.0, 150.0, ASSUMPTION, "how far one sees inside a wood, or how close one must be to see into it", "m"),
     "wood_canopy_height": Param(12.0, 5.0, 25.0, ASSUMPTION, "height of a wood's canopy above the ground, for blocking sight", "m"),
@@ -76,6 +78,18 @@ PARAMS: dict[str, Param] = {
     "eye_height_horse": Param(2.5, 2.2, 2.9, ASSUMPTION, "eye height of a rider", "m"),
     "target_height_foot": Param(2.0, 1.7, 3.0, ASSUMPTION, "visible height of an infantry body (men, shields, standards)", "m"),
     "target_height_horse": Param(2.6, 2.2, 3.2, ASSUMPTION, "visible height of a body of horse", "m"),
+
+    # perception and belief (step 3)
+    "perception_interval_s": Param(10.0, 4.0, 30.0, ASSUMPTION, "how often observers update what they see", "s"),
+    "officer_attention_range": Param(1500.0, 600.0, 3000.0, ASSUMPTION,
+                                     "an entity's officer watches his own sector: he notes bodies of troops only within this distance (army and wing commanders watch the whole field to the limit of sight)", "m"),
+    "recognise_range": Param(800.0, 300.0, 1500.0, ASSUMPTION, "within this distance an observer can tell what kind of troops a body is, and its facing", "m"),
+    "horse_foot_range": Param(2000.0, 800.0, 3000.0, ASSUMPTION, "within this distance horse can be told from foot", "m"),
+    "order_visible_range": Param(400.0, 150.0, 800.0, ASSUMPTION, "within this distance the state of a formation (steady or ragged) can be judged", "m"),
+    "pos_error_per_km": Param(30.0, 5.0, 100.0, ASSUMPTION, "spread of the error in a seen body's position, per km of distance (standard deviation)", "m"),
+    "strength_error_base": Param(0.1, 0.0, 0.3, ASSUMPTION, "spread of the error in estimating a body's numbers close up, as a fraction (standard deviation)", ""),
+    "strength_error_per_km": Param(0.15, 0.05, 0.4, ASSUMPTION, "added spread of the numbers error per km of distance, as a fraction", ""),
+    "order_error": Param(0.1, 0.0, 0.3, ASSUMPTION, "spread of the error in judging a formation's order when close enough to see it", ""),
 
     # organisation (Polybius 6.20-26 as a template)
     "legion_hastati": Param(1200, 1200, 1200, EVIDENCED, "Polybius 6.21.9", "men", integer=True, grade=_POLYBIUS_GRADE),
